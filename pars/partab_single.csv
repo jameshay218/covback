@@ -1,0 +1,13 @@
+values,names,fixed,lower_bound,upper_bound,steps
+0.11,growth_rate,0,0,2,0.1
+1,i0,1,0,100,0.1
+0.15,prob,1,0,1,0.1
+2.5,shape,1,0,10,0.1
+2,scale,1,0,10,0.1
+500,size,1,5,10000,0.1
+2.5,weibull_alpha,0,0,100,0.1
+6.5,weibull_sigma,0,0,100,0.1
+10.5,t0,0,0,75,0.1
+0.12,growth_rate_imports,1,0,2,0.1
+54,imports_stop,1,0,100,0.1
+0.02,import_propn,0,0,1,0.1

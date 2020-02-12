@@ -1,0 +1,16 @@
+Package: covback
+Type: Package
+Title: Back-calculate from confirmations
+Version: 0.1.0
+Authors: James Hay <jameshay218@gmail.com>
+Maintainer: James Hay <jameshay218@gmail.com>
+Description:
+    Given case confirmation counts for different locations, back-calculates infection incidence
+License: GPL-3
+Encoding: UTF-8
+LazyData: true
+Depends: R (>= 3.5.0)
+LinkingTo: Rcpp
+SystemRequirements: C++11
+RoxygenNote: 6.1.1
+VignetteBuilder: knitr
