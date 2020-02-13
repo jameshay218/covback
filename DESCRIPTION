@@ -12,5 +12,5 @@ LazyData: true
 Depends: R (>= 3.5.0)
 LinkingTo: Rcpp
 SystemRequirements: C++11
-RoxygenNote: 6.1.1
+RoxygenNote: 7.0.2
 VignetteBuilder: knitr

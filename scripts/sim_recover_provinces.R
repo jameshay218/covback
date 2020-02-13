@@ -1,12 +1,12 @@
-setwd("~/Documents/covback")
-#Rcpp::compileAttributes()
-#devtools::document()
+setwd("~/GitHub/covback")
+Rcpp::compileAttributes()
+devtools::document()
 devtools::load_all()
 
 library(lazymcmc)
 library(tidyverse)
 
-inc_period_draws <- read.csv("~/Documents/case_to_infection/data/backer_weibull_draws.csv",stringsAsFactors=FALSE)
+inc_period_draws <- read.csv("~/Github/case_to_infection/data/backer_weibull_draws.csv",stringsAsFactors=FALSE)
 parTab <- read.csv("pars/partab_provinces.csv",stringsAsFactors=FALSE)
 
 ## Make strong prior on alpha and sigma
@@ -28,12 +28,17 @@ f <- create_model_func_provinces(parTab,dat1, confirm_delay_pars = confirm_delay
 f(parTab$values)
 
 
+## Check that posterior works
+f <- create_model_func_provinces(parTab,data=NULL,tmax=tmax, confirm_delay_pars = confirm_delay_pars, PRIOR_FUNC=prior_func,ver="model")
+f(parTab$values)
+
+
 startTab <- generate_start_tab(parTab)
 
 ## MCMC
 ## Run first chain
 mcmcPars <- c("iterations"=50000,"popt"=0.44,"opt_freq"=1000,
-              "thin"=10,"adaptive_period"=20000,"save_block"=1000)
+              "thin"=1,"adaptive_period"=20000,"save_block"=1000)
 output <- run_MCMC(parTab=startTab, data=dat1, mcmcPars=mcmcPars, filename="test",
                    CREATE_POSTERIOR_FUNC=create_model_func_provinces, mvrPars=NULL,
                    PRIOR_FUNC = prior_func, OPT_TUNING=0.2,
@@ -65,3 +70,7 @@ chain <- read.csv(output$file)
 pdf("tmp.pdf")
 plot(coda::as.mcmc(chain[chain$sampno > 10000,]))
 dev.off()
+
+quants <- generate_prediction_intervals(chain, parTab, dat1, confirm_delay_pars,nsamp=100)
+
+plot_model_fit(chain, parTab, sim_dat$aggregated,confirm_delay_pars,nsamp=100)

@@ -11,56 +11,62 @@ plot_simulations <- function(sim_dat){
 plot_model_fit <- function(chain, parTab, data, confirm_delay_pars=NULL,nsamp=1000,
                            add_noise=TRUE, noise_ver="poisson"){
     imports_stop <- parTab[parTab$names == "import_stop","values"]
-    dat1 <- data %>% filter(var == "date_report_observable") %>% select(-var)
+    dat1 <- data %>% filter(var %in% c("date_report_observable", "date_infection_true"))
     quants <- generate_prediction_intervals(chain, parTab, dat1, confirm_delay_pars, nsamp, add_noise, noise_ver)
-
-    p <- ggplot(quants) +
-        geom_ribbon(aes(x=x,ymin=lower,ymax=upper,fill=var),alpha=0.25) +
-        geom_line(aes(x=x,y=median,col=var)) +
-        geom_point(data=data,aes(x=date,y=n,col=var)) +
+    quants1 <- quants %>% filter(var %in% c("infections","observations",
+                                 "date_onset_true","date_infection_true"))
+    p <- ggplot(quants1) +
+        geom_ribbon(aes(x=date,ymin=lower,ymax=upper,fill=var),alpha=0.25) +
+        geom_line(aes(x=date,y=median,col=var)) +
+        geom_point(data=dat1,aes(x=date,y=n,col=var)) +
+        geom_ribbon(data=dat1, aes(x=date,ymin=0,ymax=0,fill=var)) +
         geom_vline(xintercept=imports_stop,linetype="dashed") +
         theme_bw() +
-        theme(legend.position=c(0.2,0.7))
+        facet_wrap(~province,scales="free_y")
     p
 }
 
 #' @export
 generate_prediction_intervals <- function(chain, parTab, data, confirm_delay_pars=NULL,nsamp=1000,
                                           add_noise=TRUE, noise_ver="poisson"){
-    model_func <- create_model_func(parTab, data, confirm_delay_pars=confirm_delay_pars, ver="model")
-
+    model_func <- create_model_func_provinces(parTab, data, confirm_delay_pars=confirm_delay_pars, ver="model")
+    par_names <- parTab$names
+    
     samps <- sample(unique(chain$sampno), nsamp)
     
-    observations_store <- confirmations_store <- onsets_store <- infections_store <- matrix(0, nrow=nsamp, ncol=nrow(data))
+    store_all <- NULL
     for(i in seq_along(samps)){
         pars <- get_index_par(chain, samps[i])
+        names(pars) <- par_names
         res <- model_func(pars)
-        infections <- res$infections
-        onsets <- res$onsets
-        confirmations <- res$confirmations
+        #infections <- res %>% filter(var == "infections") %>% pull(n)
+        #onsets <- res %>% filter(var == "onsets") %>% pull(n)
+        #confirmations <- res %>% filter(var == "confirmations") %>% pull(n)
         if (add_noise) {
+            subset_confirmations <- res %>% filter(var == "confirmations")
             if (noise_ver == "poisson") {
-                observations <- rpois(length(confirmations),confirmations)
+                subset_confirmations <- subset_confirmations %>% 
+                    mutate(n = rpois(n(),n)) %>% 
+                    mutate(var = "observations")
             } else if (noise_ver == "nbinom") {
-                observations <- rnbinom(length(confirmations), mu=confirmations, size=pars["size"])
+                subset_confirmations <- subset_confirmations %>% 
+                    mutate(n = rnbinom(n(),mu=n,size=pars["size"])) %>% 
+                    mutate(var = "observations")
             } else {
-                observations <- observations
+                subset_confirmations <- subset_confirmations %>% mutate(var = "observations")
             }
         }
-
-        observations_store[i,] <- observations
-        infections_store[i,] <- infections
-        onsets_store[i,] <- onsets
-        confirmations_store[i,] <- confirmations
+        res <- bind_rows(res, subset_confirmations)
+        res$sampno <- i
+        store_all <- bind_rows(store_all, res)
     }
     
-    quants_obs <- get_quantiles(observations_store, "observations")
-    quants_infections <- get_quantiles(infections_store, "infections")
-    quants_onsets <- get_quantiles(onsets_store, "onsets")
-    quants_confirmations <- get_quantiles(confirmations_store, "confirmations")
-
-    all_dat <- bind_rows(quants_obs, quants_infections, quants_onsets, quants_confirmations)
-    return(all_dat)    
+    quants <- store_all %>% group_by(province, date, var) %>%
+        do(data.frame(t(c(quantile(.$n, probs = c(0.01,0.025,0.25,0.5,0.75,0.975,0.99),na.rm=TRUE),mean(.$n)))))
+    colnames(quants) <- c("province","date","var",
+                                   "min","lower","midlow","median","midhigh","upper","max","mean")
+  
+    return(quants)    
 }
 
 #' @export

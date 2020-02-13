@@ -5,9 +5,12 @@ create_model_func_provinces <- function(parTab, data=NULL, PRIOR_FUNC=NULL,
     par_names <- parTab$names
     par_provinces <- parTab$province
     unique_provinces <- unique(parTab$province)
-    unique_provinces <- unique_provinces[unique_provinces != "all"]
+    ## Start from last province
+    unique_provinces <- rev(unique_provinces[unique_provinces != "all"])
+    
     
     if (!is.null(data)) {
+        data <- data %>% arrange(province, date)
         times <- data %>% filter(province == "1") %>% pull(date)
         cases <- data$n
         bigT <- length(times)
@@ -37,6 +40,9 @@ create_model_func_provinces <- function(parTab, data=NULL, PRIOR_FUNC=NULL,
         weibull_alpha <- pars_all["weibull_alpha"]
         weibull_sigma <- pars_all["weibull_sigma"]
         
+        propn_imports <- sum(exp(pars_all[which(par_names == "import_propn")])) - exp(pars_seed["import_propn"])
+        #print("")
+        #print(paste0("Sum propn imports: ", propn_imports))
         ## If time-varying parameters not specified, enumerate out the point
         ## estimates
         if (is.null(confirm_delay_pars)) {
@@ -44,49 +50,63 @@ create_model_func_provinces <- function(parTab, data=NULL, PRIOR_FUNC=NULL,
             gamma_scale <- scale
             confirm_delay_pars <- tibble(date_onset=0:tmax, shape=gamma_shape, scale=gamma_scale)
         }
-
         all_dat <- NULL
         ## Need to loop through each province
         for(province in unique_provinces) {
             pars <- pars_all[which(par_provinces %in% c("all",province))]
             
+            #print(paste0("Province: ",province))
+            #print(paste0("Unmodified propn import: ", pars["import_propn"]))
+            ## Proportion of seed cases that will get exported
+            ## If province 1, then export_propn cases are lost
+            ## Otherwise, some proportion of these lost cases are gained elsewhere
+            if(province == "1") {
+                export_propn <- pars_seed["export_propn"]
+                t0 <- pars_seed["t0"]
+                t0_import <- pars_seed["t0"]
+            } else {
+                t0_import <- pars_seed["t0"]
+                t0 <- pars["t0"] + t0_import
+                export_propn <- -1 * pars_seed["export_propn"] * exp(pars["import_propn"])/propn_imports
+            }
+            
+            #print(paste0("Import proportion: ",export_propn))
+            
             ## Growth model
             growth_rate <- pars["growth_rate"]
             i0 <- pars["i0"]
-            t0_import <- pars_seed["t0"]
-            t0 <- pars["t0"] + t0_import
             
             ## Import model
             growth_rate_imports <- pars_seed["growth_rate"] ## Important, growth rate from province 1
             imports_stop <- pars["imports_stop"]
-            import_propn <- pars["import_propn"]
-
+            
             ## Solve model for this province
-            res <- calculate_all_incidences(growth_rate, growth_rate_imports, t0, t0_import, i0, import_propn, imports_stop,
+            res <- calculate_all_incidences(growth_rate, growth_rate_imports, t0, t0_import, i0, export_propn, imports_stop,
                                             weibull_alpha, weibull_sigma, confirm_delay_pars$shape, confirm_delay_pars$scale,
                                             tmax)
 
             ## Extract the 3 incidence types
             infections <- res$infections
+            
             onsets <- res$onsets
             confirmations <- res$confirmations
 
             infections <- tibble(date=times, n=infections,province=province,var="infections")
             onsets <- tibble(date=times,n=onsets,province=province,var="onsets")
             confirmations <- tibble(date=times,n=confirmations,province=province,var="confirmations")
-            
+            #print(paste0("Province confirmations: ", sum(confirmations$n)))
             ## Combine and save in list
             all_dat[[province]] <- bind_rows(infections, onsets, confirmations)
         }
         ## Once done, combined all of the provinces into one tibble
         all_dat <- do.call("bind_rows", all_dat)
-
+        all_dat <- all_dat %>% arrange(province, date)
+                
         ## If version to solve is model, we're done. Otherwise solve likelihood for confirmations
         if(ver == "model"){
             return(all_dat)
         } else {
             confirmed <- all_dat %>% filter(all_dat$var == "confirmations") %>% pull(n)
-
             if (noise_ver == "poisson") {
                 lik <- sum(dpois(x=cases, confirmed, log=TRUE))
             } else {
@@ -95,6 +115,7 @@ create_model_func_provinces <- function(parTab, data=NULL, PRIOR_FUNC=NULL,
             if (!is.null(PRIOR_FUNC)) {
                 lik <- lik + PRIOR_FUNC(pars)
             }
+            #print(lik)
             return(lik)
         }
     }
