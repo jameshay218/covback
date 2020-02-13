@@ -1,4 +1,4 @@
-setwd("~/GitHub/covback")
+setwd("~/Documents/covback")
 Rcpp::compileAttributes()
 devtools::document()
 devtools::load_all()
@@ -6,8 +6,9 @@ devtools::load_all()
 library(lazymcmc)
 library(tidyverse)
 
-inc_period_draws <- read.csv("~/Github/case_to_infection/data/backer_weibull_draws.csv",stringsAsFactors=FALSE)
+inc_period_draws <- read.csv("~/Documents/case_to_infection/data/backer_weibull_draws.csv",stringsAsFactors=FALSE)
 parTab <- read.csv("pars/partab_provinces.csv",stringsAsFactors=FALSE)
+parTab <- create_many_province_partab(parTab, 26, 100)
 
 ## Make strong prior on alpha and sigma
 prior_func <- create_incubation_prior(inc_period_draws)
@@ -25,20 +26,25 @@ dat1 <- sim_dat$aggregated %>% filter(var=="date_report_observable") %>% select(
 
 ## Check that posterior works
 f <- create_model_func_provinces(parTab,dat1, confirm_delay_pars = confirm_delay_pars, PRIOR_FUNC=prior_func)
+Rprof(tmp<-tempfile())
 f(parTab$values)
-
+Rprof(NULL)
+summaryRprof(tmp)
 
 ## Check that posterior works
 f <- create_model_func_provinces(parTab,data=NULL,tmax=tmax, confirm_delay_pars = confirm_delay_pars, PRIOR_FUNC=prior_func,ver="model")
 f(parTab$values)
 
-
 startTab <- generate_start_tab(parTab)
+startTab[startTab$names %in% c("weibull_alpha","weibull_sigma"),"values"] <- c(2.5,6)
+
+plot(log(exp(0.2*0:100)),type='l')
+lines(log(exp(0*0:100)),type='l')
 
 ## MCMC
 ## Run first chain
-mcmcPars <- c("iterations"=50000,"popt"=0.44,"opt_freq"=1000,
-              "thin"=1,"adaptive_period"=20000,"save_block"=1000)
+mcmcPars <- c("iterations"=100000,"popt"=0.44,"opt_freq"=5000,
+              "thin"=10,"adaptive_period"=50000,"save_block"=100)
 output <- run_MCMC(parTab=startTab, data=dat1, mcmcPars=mcmcPars, filename="test",
                    CREATE_POSTERIOR_FUNC=create_model_func_provinces, mvrPars=NULL,
                    PRIOR_FUNC = prior_func, OPT_TUNING=0.2,
@@ -73,4 +79,7 @@ dev.off()
 
 quants <- generate_prediction_intervals(chain, parTab, dat1, confirm_delay_pars,nsamp=100)
 
-plot_model_fit(chain, parTab, sim_dat$aggregated,confirm_delay_pars,nsamp=100)
+p <- plot_model_fit(chain, parTab, sim_dat$aggregated,confirm_delay_pars,nsamp=100)
+pdf("tmp.pdf",height=12,width=10)
+p
+dev.off()

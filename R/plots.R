@@ -11,18 +11,19 @@ plot_simulations <- function(sim_dat){
 plot_model_fit <- function(chain, parTab, data, confirm_delay_pars=NULL,nsamp=1000,
                            add_noise=TRUE, noise_ver="poisson"){
     imports_stop <- parTab[parTab$names == "import_stop","values"]
-    dat1 <- data %>% filter(var %in% c("date_report_observable", "date_infection_true"))
+    dat_plot <- data %>% filter(var %in% c("date_report_observable", "date_infection_true"))
+    dat1 <- data %>% filter(var == "date_report_observable") %>% select(date, n, province)
     quants <- generate_prediction_intervals(chain, parTab, dat1, confirm_delay_pars, nsamp, add_noise, noise_ver)
     quants1 <- quants %>% filter(var %in% c("infections","observations",
                                  "date_onset_true","date_infection_true"))
     p <- ggplot(quants1) +
         geom_ribbon(aes(x=date,ymin=lower,ymax=upper,fill=var),alpha=0.25) +
         geom_line(aes(x=date,y=median,col=var)) +
-        geom_point(data=dat1,aes(x=date,y=n,col=var)) +
-        geom_ribbon(data=dat1, aes(x=date,ymin=0,ymax=0,fill=var)) +
+        geom_point(data=dat_plot,aes(x=date,y=n,col=var),size=0.1) +
+        geom_ribbon(data=dat_plot, aes(x=date,ymin=0,ymax=0,fill=var)) +
         geom_vline(xintercept=imports_stop,linetype="dashed") +
         theme_bw() +
-        facet_wrap(~province,scales="free_y")
+        facet_wrap(~province,scales="free_y",ncol=4)
     p
 }
 

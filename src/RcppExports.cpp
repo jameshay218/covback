@@ -50,6 +50,39 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// prob_not_symptomatic
+double prob_not_symptomatic(double weibull_alpha, double weibull_sigma, double t);
+RcppExport SEXP _covback_prob_not_symptomatic(SEXP weibull_alphaSEXP, SEXP weibull_sigmaSEXP, SEXP tSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< double >::type weibull_alpha(weibull_alphaSEXP);
+    Rcpp::traits::input_parameter< double >::type weibull_sigma(weibull_sigmaSEXP);
+    Rcpp::traits::input_parameter< double >::type t(tSEXP);
+    rcpp_result_gen = Rcpp::wrap(prob_not_symptomatic(weibull_alpha, weibull_sigma, t));
+    return rcpp_result_gen;
+END_RCPP
+}
+// calculate_infection_prevalence
+NumericVector calculate_infection_prevalence(double growth_rate, double growth_rate_imports, int tmax, double t0, double t0_import, double i0, double import_propn, int imports_stop, double weibull_alpha, double weibull_sigma);
+RcppExport SEXP _covback_calculate_infection_prevalence(SEXP growth_rateSEXP, SEXP growth_rate_importsSEXP, SEXP tmaxSEXP, SEXP t0SEXP, SEXP t0_importSEXP, SEXP i0SEXP, SEXP import_propnSEXP, SEXP imports_stopSEXP, SEXP weibull_alphaSEXP, SEXP weibull_sigmaSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< double >::type growth_rate(growth_rateSEXP);
+    Rcpp::traits::input_parameter< double >::type growth_rate_imports(growth_rate_importsSEXP);
+    Rcpp::traits::input_parameter< int >::type tmax(tmaxSEXP);
+    Rcpp::traits::input_parameter< double >::type t0(t0SEXP);
+    Rcpp::traits::input_parameter< double >::type t0_import(t0_importSEXP);
+    Rcpp::traits::input_parameter< double >::type i0(i0SEXP);
+    Rcpp::traits::input_parameter< double >::type import_propn(import_propnSEXP);
+    Rcpp::traits::input_parameter< int >::type imports_stop(imports_stopSEXP);
+    Rcpp::traits::input_parameter< double >::type weibull_alpha(weibull_alphaSEXP);
+    Rcpp::traits::input_parameter< double >::type weibull_sigma(weibull_sigmaSEXP);
+    rcpp_result_gen = Rcpp::wrap(calculate_infection_prevalence(growth_rate, growth_rate_imports, tmax, t0, t0_import, i0, import_propn, imports_stop, weibull_alpha, weibull_sigma));
+    return rcpp_result_gen;
+END_RCPP
+}
 // calculate_confirmation_incidence
 NumericVector calculate_confirmation_incidence(NumericVector onsets, NumericVector shapes, NumericVector scales, int tmax);
 RcppExport SEXP _covback_calculate_confirmation_incidence(SEXP onsetsSEXP, SEXP shapesSEXP, SEXP scalesSEXP, SEXP tmaxSEXP) {
@@ -91,6 +124,8 @@ static const R_CallMethodDef CallEntries[] = {
     {"_covback_daily_exp_interval_cpp", (DL_FUNC) &_covback_daily_exp_interval_cpp, 3},
     {"_covback_calculate_infection_incidence", (DL_FUNC) &_covback_calculate_infection_incidence, 8},
     {"_covback_calculate_onset_incidence", (DL_FUNC) &_covback_calculate_onset_incidence, 4},
+    {"_covback_prob_not_symptomatic", (DL_FUNC) &_covback_prob_not_symptomatic, 3},
+    {"_covback_calculate_infection_prevalence", (DL_FUNC) &_covback_calculate_infection_prevalence, 10},
     {"_covback_calculate_confirmation_incidence", (DL_FUNC) &_covback_calculate_confirmation_incidence, 4},
     {"_covback_calculate_all_incidences", (DL_FUNC) &_covback_calculate_all_incidences, 12},
     {NULL, NULL, 0}

@@ -14,6 +14,14 @@ calculate_onset_incidence <- function(infections, weibull_alpha, weibull_sigma, 
     .Call('_covback_calculate_onset_incidence', PACKAGE = 'covback', infections, weibull_alpha, weibull_sigma, tmax)
 }
 
+prob_not_symptomatic <- function(weibull_alpha, weibull_sigma, t) {
+    .Call('_covback_prob_not_symptomatic', PACKAGE = 'covback', weibull_alpha, weibull_sigma, t)
+}
+
+calculate_infection_prevalence <- function(growth_rate, growth_rate_imports, tmax, t0, t0_import, i0, import_propn, imports_stop, weibull_alpha, weibull_sigma) {
+    .Call('_covback_calculate_infection_prevalence', PACKAGE = 'covback', growth_rate, growth_rate_imports, tmax, t0, t0_import, i0, import_propn, imports_stop, weibull_alpha, weibull_sigma)
+}
+
 calculate_confirmation_incidence <- function(onsets, shapes, scales, tmax) {
     .Call('_covback_calculate_confirmation_incidence', PACKAGE = 'covback', onsets, shapes, scales, tmax)
 }

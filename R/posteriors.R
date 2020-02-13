@@ -40,7 +40,10 @@ create_model_func_provinces <- function(parTab, data=NULL, PRIOR_FUNC=NULL,
         weibull_alpha <- pars_all["weibull_alpha"]
         weibull_sigma <- pars_all["weibull_sigma"]
         
-        propn_imports <- sum(exp(pars_all[which(par_names == "import_propn")])) - exp(pars_seed["import_propn"])
+        #propn_imports <- sum(exp(pars_all[which(par_names == "import_propn")])) - exp(pars_seed["import_propn"])
+        
+        daily_prob_leaving <- prob_left_pre_sympt(pars_seed["export_prob"], weibull_alpha, weibull_sigma, 100)
+
         #print("")
         #print(paste0("Sum propn imports: ", propn_imports))
         ## If time-varying parameters not specified, enumerate out the point
@@ -61,15 +64,15 @@ create_model_func_provinces <- function(parTab, data=NULL, PRIOR_FUNC=NULL,
             ## If province 1, then export_propn cases are lost
             ## Otherwise, some proportion of these lost cases are gained elsewhere
             if(province == "1") {
-                export_propn <- pars_seed["export_propn"]
+                export_propn <- -daily_prob_leaving
                 t0 <- pars_seed["t0"]
                 t0_import <- pars_seed["t0"]
             } else {
                 t0_import <- pars_seed["t0"]
                 t0 <- pars["t0"] + t0_import
-                export_propn <- -1 * pars_seed["export_propn"] * exp(pars["import_propn"])/propn_imports
+                t0 <- min(t0, tmax-1)
+                export_propn <- daily_prob_leaving * (pars["import_propn"])#/propn_imports
             }
-            
             #print(paste0("Import proportion: ",export_propn))
             
             ## Growth model
@@ -79,7 +82,6 @@ create_model_func_provinces <- function(parTab, data=NULL, PRIOR_FUNC=NULL,
             ## Import model
             growth_rate_imports <- pars_seed["growth_rate"] ## Important, growth rate from province 1
             imports_stop <- pars["imports_stop"]
-            
             ## Solve model for this province
             res <- calculate_all_incidences(growth_rate, growth_rate_imports, t0, t0_import, i0, export_propn, imports_stop,
                                             weibull_alpha, weibull_sigma, confirm_delay_pars$shape, confirm_delay_pars$scale,
@@ -87,7 +89,6 @@ create_model_func_provinces <- function(parTab, data=NULL, PRIOR_FUNC=NULL,
 
             ## Extract the 3 incidence types
             infections <- res$infections
-            
             onsets <- res$onsets
             confirmations <- res$confirmations
 
