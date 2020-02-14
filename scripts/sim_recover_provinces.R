@@ -3,6 +3,11 @@ Rcpp::compileAttributes()
 devtools::document()
 devtools::load_all()
 
+probs <- c(runif(50,0.01,0.05),rep(0,50))
+y <- prob_leave_on_day(probs, 100)
+#y <- y[,1:100]
+plot(y[1,])
+
 library(lazymcmc)
 library(tidyverse)
 
@@ -82,5 +87,5 @@ quants <- generate_prediction_intervals(chain, parTab, dat1, confirm_delay_pars,
 
 p <- plot_model_fit(chain, parTab, sim_dat$aggregated,confirm_delay_pars,nsamp=100)
 pdf("tmp.pdf",height=12,width=10)
-p
+p + theme(legend.position=c(0.8,0.1))
 dev.off()

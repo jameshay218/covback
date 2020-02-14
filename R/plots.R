@@ -19,11 +19,11 @@ plot_model_fit <- function(chain, parTab, data, confirm_delay_pars=NULL,nsamp=10
     p <- ggplot(quants1) +
         geom_ribbon(aes(x=date,ymin=lower,ymax=upper,fill=var),alpha=0.25) +
         geom_line(aes(x=date,y=median,col=var)) +
-        geom_point(data=dat_plot,aes(x=date,y=n,col=var),size=0.1) +
+        geom_point(data=dat_plot,aes(x=date,y=n,col=var),size=0.5) +
         geom_ribbon(data=dat_plot, aes(x=date,ymin=0,ymax=0,fill=var)) +
         geom_vline(xintercept=imports_stop,linetype="dashed") +
-        theme_bw() +
-        facet_wrap(~province,scales="free_y",ncol=4)
+        theme_bw() + theme(legend.position=c(0.8, 0.05)) +
+        facet_wrap(~province,scales="free_y",ncol=5)
     p
 }
 

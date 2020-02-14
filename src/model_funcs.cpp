@@ -38,6 +38,15 @@ NumericVector calculate_infection_incidence(double growth_rate, double growth_ra
 }
 
 //[[Rcpp::export]]
+NumericVector calculate_infection_incidence_time(double growth_rate, double growth_rate_imports, 
+                                            int tmax, double t0, double t0_import, double i0, NumericVector import_propns){
+  NumericVector local = daily_exp_interval_cpp(growth_rate,tmax, t0)*i0;
+  NumericVector imports = daily_exp_interval_cpp(growth_rate_imports, tmax, t0_import)*import_propns;
+  NumericVector total = local + imports;
+  return(total);
+}
+
+//[[Rcpp::export]]
 NumericVector calculate_onset_probs(int tmax, double weibull_alpha, double weibull_sigma){
   NumericVector probs(tmax+1);
   for(int t = 0; t <= tmax; ++t){

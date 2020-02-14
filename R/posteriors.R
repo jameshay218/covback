@@ -1,6 +1,7 @@
 #' @export
 create_model_func_provinces <- function(parTab, data=NULL, PRIOR_FUNC=NULL,
                                         tmax=NULL, confirm_delay_pars=NULL,
+                                        daily_import_probs=NULL, daily_export_probs=NULL,
                                         ver="posterior", noise_ver="poisson"){
     par_names <- parTab$names
     par_provinces <- parTab$province

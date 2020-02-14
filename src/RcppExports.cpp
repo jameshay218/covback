@@ -5,6 +5,29 @@
 
 using namespace Rcpp;
 
+// prob_not_left_per_day
+NumericVector prob_not_left_per_day(NumericVector probs);
+RcppExport SEXP _covback_prob_not_left_per_day(SEXP probsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericVector >::type probs(probsSEXP);
+    rcpp_result_gen = Rcpp::wrap(prob_not_left_per_day(probs));
+    return rcpp_result_gen;
+END_RCPP
+}
+// prob_leave_on_day
+NumericMatrix prob_leave_on_day(NumericVector probs, int tmax);
+RcppExport SEXP _covback_prob_leave_on_day(SEXP probsSEXP, SEXP tmaxSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericVector >::type probs(probsSEXP);
+    Rcpp::traits::input_parameter< int >::type tmax(tmaxSEXP);
+    rcpp_result_gen = Rcpp::wrap(prob_leave_on_day(probs, tmax));
+    return rcpp_result_gen;
+END_RCPP
+}
 // daily_exp_interval_cpp
 NumericVector daily_exp_interval_cpp(double growth, int tmax, double t0);
 RcppExport SEXP _covback_daily_exp_interval_cpp(SEXP growthSEXP, SEXP tmaxSEXP, SEXP t0SEXP) {
@@ -33,6 +56,23 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< double >::type import_propn(import_propnSEXP);
     Rcpp::traits::input_parameter< int >::type imports_stop(imports_stopSEXP);
     rcpp_result_gen = Rcpp::wrap(calculate_infection_incidence(growth_rate, growth_rate_imports, tmax, t0, t0_import, i0, import_propn, imports_stop));
+    return rcpp_result_gen;
+END_RCPP
+}
+// calculate_infection_incidence_time
+NumericVector calculate_infection_incidence_time(double growth_rate, double growth_rate_imports, int tmax, double t0, double t0_import, double i0, NumericVector import_propns);
+RcppExport SEXP _covback_calculate_infection_incidence_time(SEXP growth_rateSEXP, SEXP growth_rate_importsSEXP, SEXP tmaxSEXP, SEXP t0SEXP, SEXP t0_importSEXP, SEXP i0SEXP, SEXP import_propnsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< double >::type growth_rate(growth_rateSEXP);
+    Rcpp::traits::input_parameter< double >::type growth_rate_imports(growth_rate_importsSEXP);
+    Rcpp::traits::input_parameter< int >::type tmax(tmaxSEXP);
+    Rcpp::traits::input_parameter< double >::type t0(t0SEXP);
+    Rcpp::traits::input_parameter< double >::type t0_import(t0_importSEXP);
+    Rcpp::traits::input_parameter< double >::type i0(i0SEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type import_propns(import_propnsSEXP);
+    rcpp_result_gen = Rcpp::wrap(calculate_infection_incidence_time(growth_rate, growth_rate_imports, tmax, t0, t0_import, i0, import_propns));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -192,8 +232,11 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
+    {"_covback_prob_not_left_per_day", (DL_FUNC) &_covback_prob_not_left_per_day, 1},
+    {"_covback_prob_leave_on_day", (DL_FUNC) &_covback_prob_leave_on_day, 2},
     {"_covback_daily_exp_interval_cpp", (DL_FUNC) &_covback_daily_exp_interval_cpp, 3},
     {"_covback_calculate_infection_incidence", (DL_FUNC) &_covback_calculate_infection_incidence, 8},
+    {"_covback_calculate_infection_incidence_time", (DL_FUNC) &_covback_calculate_infection_incidence_time, 7},
     {"_covback_calculate_onset_probs", (DL_FUNC) &_covback_calculate_onset_probs, 3},
     {"_covback_calculate_onset_incidence", (DL_FUNC) &_covback_calculate_onset_incidence, 4},
     {"_covback_calculate_onset_incidence_new", (DL_FUNC) &_covback_calculate_onset_incidence_new, 3},
