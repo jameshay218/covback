@@ -89,3 +89,21 @@ plot_posteriors <- function(chain, parTab){
     estimate_p
     
 }
+#' @export
+plot_reporting_landscape <- function(shapes, scales){
+  tmp <- calculate_reporting_delay_matrix(shapes, scales)
+  tmp <- as.data.frame(tmp)
+  tmp$time <- 0:(nrow(tmp)-1)
+  tmp <- reshape2::melt(tmp,id.vars="time")
+  tmp$variable <- as.numeric(as.factor(tmp$variable))
+  tmp$variable <- tmp$time - tmp$variable
+  colnames(tmp) <- c("Time of report","Delay from onset", "Probability")
+  tmax <- max(tmp$`Time of report`)
+  tmin <- min(tmp$`Time of report`)
+  ggplot(tmp) + geom_raster(aes(x=`Time of report`,y=`Delay from onset`, fill=`Probability`)) + 
+    scale_fill_gradient(low="blue",high="red") + coord_cartesian(xlim=c(tmin,tmax),ylim=c(tmin,tmax)) + 
+    scale_y_continuous(expand=c(0,0)) + 
+    scale_x_continuous(expand=c(0,0)) +
+    theme_bw() + 
+    theme(legend.position=c(0.2,0.7))
+}

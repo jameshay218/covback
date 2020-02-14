@@ -16,8 +16,9 @@ prior_func <- create_incubation_prior(inc_period_draws)
 ## Generate some fake data
 tmax <- 75
 times <- 0:tmax
-gamma_changes <- generate_confirmation_delays(5, 5, 15, 15, 0.1,0.1,250)
+gamma_changes <- generate_confirmation_delays(3, 1, 5, 10, 0.05,0.05,250)
 confirm_delay_pars <- gamma_changes$pars
+plot_reporting_landscape(confirm_delay_pars$shape, confirm_delay_pars$scale)
 sim_dat <- simulate_observed_data_provinces(parTab,tmax, tmax, gamma_changes$par,TRUE,"poisson")
 ggplot(sim_dat$aggregated) + 
   geom_line(aes(x=date,y=n,col=var)) +
@@ -33,7 +34,7 @@ summaryRprof(tmp)
 
 ## Check that posterior works
 f <- create_model_func_provinces(parTab,data=NULL,tmax=tmax, confirm_delay_pars = confirm_delay_pars, PRIOR_FUNC=prior_func,ver="model")
-f(parTab$values)
+dat <- f(parTab$values)
 
 startTab <- generate_start_tab(parTab)
 startTab[startTab$names %in% c("weibull_alpha","weibull_sigma"),"values"] <- c(2.5,6)
@@ -43,8 +44,8 @@ lines(log(exp(0*0:100)),type='l')
 
 ## MCMC
 ## Run first chain
-mcmcPars <- c("iterations"=100000,"popt"=0.44,"opt_freq"=5000,
-              "thin"=10,"adaptive_period"=50000,"save_block"=100)
+mcmcPars <- c("iterations"=50000,"popt"=0.44,"opt_freq"=5000,
+              "thin"=10,"adaptive_period"=20000,"save_block"=100)
 output <- run_MCMC(parTab=startTab, data=dat1, mcmcPars=mcmcPars, filename="test",
                    CREATE_POSTERIOR_FUNC=create_model_func_provinces, mvrPars=NULL,
                    PRIOR_FUNC = prior_func, OPT_TUNING=0.2,

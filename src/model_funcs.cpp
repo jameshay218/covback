@@ -36,20 +36,47 @@ NumericVector calculate_infection_incidence(double growth_rate, double growth_ra
   NumericVector total = local + imports;
   return(total);
 }
+
+//[[Rcpp::export]]
+NumericVector calculate_onset_probs(int tmax, double weibull_alpha, double weibull_sigma){
+  NumericVector probs(tmax+1);
+  for(int t = 0; t <= tmax; ++t){
+    probs[t] = R::pweibull(t+1, weibull_alpha, weibull_sigma, true, false) - R::pweibull(t, weibull_alpha, weibull_sigma, true, false);
+  }
+  return(probs);
+}
 //[[Rcpp::export]]
 NumericVector calculate_onset_incidence(NumericVector infections, double weibull_alpha, double weibull_sigma, int tmax){
   NumericVector onsets(tmax+1);
   NumericVector infections_subset;
   IntegerVector seqs;
-  
   NumericVector probs;
   
   for(int t = 0; t <= tmax; ++t){
     seqs = seq(0, t);
     infections_subset = infections[seqs];
+    //probs = onset_probs[t-seqs+1];
     probs = Rcpp::pweibull(t-seqs+1, weibull_alpha, weibull_sigma,true,false) - Rcpp::pweibull(t-seqs, weibull_alpha, weibull_sigma,true,false);
     probs = probs*infections_subset;
       
+    onsets[t] = sum(probs);
+  }
+  return(onsets);
+}
+//[[Rcpp::export]]
+NumericVector calculate_onset_incidence_new(NumericVector infections, NumericVector onset_probs, int tmax){
+  NumericVector onsets(tmax+1);
+  NumericVector infections_subset;
+  IntegerVector seqs;
+  NumericVector probs;
+  
+  for(int t = 0; t <= tmax; ++t){
+    seqs = seq(0, t);
+    infections_subset = infections[seqs];
+    probs = onset_probs[t-seqs];
+    //probs = Rcpp::pweibull(t-seqs+1, weibull_alpha, weibull_sigma,true,false) - Rcpp::pweibull(t-seqs, weibull_alpha, weibull_sigma,true,false);
+    probs = probs*infections_subset;
+    
     onsets[t] = sum(probs);
   }
   return(onsets);
@@ -77,8 +104,28 @@ NumericVector calculate_infection_prevalence(double growth_rate, double growth_r
   }
   return(prevalence);
 }
-
-
+//[[Rcpp::export]]
+NumericMatrix calculate_reporting_delay_matrix(NumericVector shapes, NumericVector scales){
+  double shape1;
+  double scale1;
+  int tmax = shapes.size();
+  NumericMatrix probs(tmax, tmax);
+  double tmp;
+  // Time of observation
+  for(int t = 0; t < tmax; ++t){
+    // Going back in time from now to 0
+    for(int j = 0; j <= t; ++j){
+      // Use the reporting delay distribution as of time j
+      shape1 = shapes[j];
+      scale1 = scales[j];
+      
+      // Probability of reporting between t-j+1 and t-j days after onset
+      tmp = R::pgamma(t-j+1, shape1, scale1, true, false) - R::pgamma(t-j, shape1, scale1, true,false);
+      probs(t,j) = tmp;
+    }
+  }
+  return(probs);
+}
 //[[Rcpp::export]]
 NumericVector calculate_confirmation_incidence(NumericVector onsets, NumericVector shapes, NumericVector scales, int tmax){
   NumericVector confirmations(tmax+1);
@@ -93,13 +140,17 @@ NumericVector calculate_confirmation_incidence(NumericVector onsets, NumericVect
   double tmp;
   double prob;
   
+  // For each observation time
   for(int t = 0; t <= tmax; ++t){
     seqs = seq(0, t);
     tmp = 0;
     
+    // Get all onsets on all preceding days
     for(int j = 0; j <= t; ++j){
       shape1 = shapes[j];
       scale1 = scales[j];
+      
+      // Probability that an onset t-j days prior to t is reported today
       prob = R::pgamma(t-j + 1, shape1, scale1, true, false) - R::pgamma(t-j, shape1, scale1, true, false);
       tmp += prob*onsets[j];
     }
@@ -107,6 +158,35 @@ NumericVector calculate_confirmation_incidence(NumericVector onsets, NumericVect
   }
   return(confirmations);
 }
+
+
+//[[Rcpp::export]]
+NumericVector calculate_confirmation_incidence_new(NumericVector onsets, int tmax,NumericMatrix report_delay_mat){
+  NumericVector confirmations(tmax+1);
+  NumericVector onsets_subset;
+  IntegerVector seqs;
+  
+  NumericVector probs;
+  
+  double tmp;
+  double prob;
+  
+  // For each observation time
+  for(int t = 0; t <= tmax; ++t){
+    seqs = seq(0, t);
+    tmp = 0;
+    
+    // Get all onsets on all preceding days
+    for(int j = 0; j <= t; ++j){
+      // Probability that an onset t-j days prior to t is reported today
+      prob = report_delay_mat(t, j);
+      tmp += prob*onsets[j];
+    }
+    confirmations[t] = tmp;
+  }
+  return(confirmations);
+}
+
 
 //[[Rcpp::export]]
 List calculate_all_incidences(double growth_rate, double growth_rate_imports, 
@@ -122,4 +202,17 @@ List calculate_all_incidences(double growth_rate, double growth_rate_imports,
   List res = List::create(Named("infections")=infections,Named("onsets")=onsets,Named("confirmations")=confirmations);
   return(res);
 }
-                          
+//[[Rcpp::export]]
+List calculate_all_incidences_new(double growth_rate, double growth_rate_imports, 
+                              double t0, double t0_import, double i0, double import_propn,
+                              int imports_stop, NumericVector onset_probs, NumericMatrix report_delay_mat,
+                              int tmax){
+  NumericVector infections = calculate_infection_incidence(growth_rate, growth_rate_imports,
+                                                           tmax, t0, t0_import, i0, import_propn, imports_stop);
+  NumericVector onsets = calculate_onset_incidence_new(infections, onset_probs, tmax);
+  NumericVector confirmations = calculate_confirmation_incidence_new(onsets, tmax, report_delay_mat);
+  
+  List res = List::create(Named("infections")=infections,Named("onsets")=onsets,Named("confirmations")=confirmations);
+  return(res);
+}
+

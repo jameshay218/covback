@@ -10,8 +10,16 @@ calculate_infection_incidence <- function(growth_rate, growth_rate_imports, tmax
     .Call('_covback_calculate_infection_incidence', PACKAGE = 'covback', growth_rate, growth_rate_imports, tmax, t0, t0_import, i0, import_propn, imports_stop)
 }
 
+calculate_onset_probs <- function(tmax, weibull_alpha, weibull_sigma) {
+    .Call('_covback_calculate_onset_probs', PACKAGE = 'covback', tmax, weibull_alpha, weibull_sigma)
+}
+
 calculate_onset_incidence <- function(infections, weibull_alpha, weibull_sigma, tmax) {
     .Call('_covback_calculate_onset_incidence', PACKAGE = 'covback', infections, weibull_alpha, weibull_sigma, tmax)
+}
+
+calculate_onset_incidence_new <- function(infections, onset_probs, tmax) {
+    .Call('_covback_calculate_onset_incidence_new', PACKAGE = 'covback', infections, onset_probs, tmax)
 }
 
 prob_not_symptomatic <- function(weibull_alpha, weibull_sigma, t) {
@@ -22,11 +30,23 @@ calculate_infection_prevalence <- function(growth_rate, growth_rate_imports, tma
     .Call('_covback_calculate_infection_prevalence', PACKAGE = 'covback', growth_rate, growth_rate_imports, tmax, t0, t0_import, i0, import_propn, imports_stop, weibull_alpha, weibull_sigma)
 }
 
+calculate_reporting_delay_matrix <- function(shapes, scales) {
+    .Call('_covback_calculate_reporting_delay_matrix', PACKAGE = 'covback', shapes, scales)
+}
+
 calculate_confirmation_incidence <- function(onsets, shapes, scales, tmax) {
     .Call('_covback_calculate_confirmation_incidence', PACKAGE = 'covback', onsets, shapes, scales, tmax)
 }
 
+calculate_confirmation_incidence_new <- function(onsets, tmax, report_delay_mat) {
+    .Call('_covback_calculate_confirmation_incidence_new', PACKAGE = 'covback', onsets, tmax, report_delay_mat)
+}
+
 calculate_all_incidences <- function(growth_rate, growth_rate_imports, t0, t0_import, i0, import_propn, imports_stop, weibull_alpha, weibull_sigma, shapes, scales, tmax) {
     .Call('_covback_calculate_all_incidences', PACKAGE = 'covback', growth_rate, growth_rate_imports, t0, t0_import, i0, import_propn, imports_stop, weibull_alpha, weibull_sigma, shapes, scales, tmax)
+}
+
+calculate_all_incidences_new <- function(growth_rate, growth_rate_imports, t0, t0_import, i0, import_propn, imports_stop, onset_probs, report_delay_mat, tmax) {
+    .Call('_covback_calculate_all_incidences_new', PACKAGE = 'covback', growth_rate, growth_rate_imports, t0, t0_import, i0, import_propn, imports_stop, onset_probs, report_delay_mat, tmax)
 }
 

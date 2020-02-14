@@ -36,6 +36,19 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// calculate_onset_probs
+NumericVector calculate_onset_probs(int tmax, double weibull_alpha, double weibull_sigma);
+RcppExport SEXP _covback_calculate_onset_probs(SEXP tmaxSEXP, SEXP weibull_alphaSEXP, SEXP weibull_sigmaSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< int >::type tmax(tmaxSEXP);
+    Rcpp::traits::input_parameter< double >::type weibull_alpha(weibull_alphaSEXP);
+    Rcpp::traits::input_parameter< double >::type weibull_sigma(weibull_sigmaSEXP);
+    rcpp_result_gen = Rcpp::wrap(calculate_onset_probs(tmax, weibull_alpha, weibull_sigma));
+    return rcpp_result_gen;
+END_RCPP
+}
 // calculate_onset_incidence
 NumericVector calculate_onset_incidence(NumericVector infections, double weibull_alpha, double weibull_sigma, int tmax);
 RcppExport SEXP _covback_calculate_onset_incidence(SEXP infectionsSEXP, SEXP weibull_alphaSEXP, SEXP weibull_sigmaSEXP, SEXP tmaxSEXP) {
@@ -47,6 +60,19 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< double >::type weibull_sigma(weibull_sigmaSEXP);
     Rcpp::traits::input_parameter< int >::type tmax(tmaxSEXP);
     rcpp_result_gen = Rcpp::wrap(calculate_onset_incidence(infections, weibull_alpha, weibull_sigma, tmax));
+    return rcpp_result_gen;
+END_RCPP
+}
+// calculate_onset_incidence_new
+NumericVector calculate_onset_incidence_new(NumericVector infections, NumericVector onset_probs, int tmax);
+RcppExport SEXP _covback_calculate_onset_incidence_new(SEXP infectionsSEXP, SEXP onset_probsSEXP, SEXP tmaxSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericVector >::type infections(infectionsSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type onset_probs(onset_probsSEXP);
+    Rcpp::traits::input_parameter< int >::type tmax(tmaxSEXP);
+    rcpp_result_gen = Rcpp::wrap(calculate_onset_incidence_new(infections, onset_probs, tmax));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -83,6 +109,18 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// calculate_reporting_delay_matrix
+NumericMatrix calculate_reporting_delay_matrix(NumericVector shapes, NumericVector scales);
+RcppExport SEXP _covback_calculate_reporting_delay_matrix(SEXP shapesSEXP, SEXP scalesSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericVector >::type shapes(shapesSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type scales(scalesSEXP);
+    rcpp_result_gen = Rcpp::wrap(calculate_reporting_delay_matrix(shapes, scales));
+    return rcpp_result_gen;
+END_RCPP
+}
 // calculate_confirmation_incidence
 NumericVector calculate_confirmation_incidence(NumericVector onsets, NumericVector shapes, NumericVector scales, int tmax);
 RcppExport SEXP _covback_calculate_confirmation_incidence(SEXP onsetsSEXP, SEXP shapesSEXP, SEXP scalesSEXP, SEXP tmaxSEXP) {
@@ -94,6 +132,19 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< NumericVector >::type scales(scalesSEXP);
     Rcpp::traits::input_parameter< int >::type tmax(tmaxSEXP);
     rcpp_result_gen = Rcpp::wrap(calculate_confirmation_incidence(onsets, shapes, scales, tmax));
+    return rcpp_result_gen;
+END_RCPP
+}
+// calculate_confirmation_incidence_new
+NumericVector calculate_confirmation_incidence_new(NumericVector onsets, int tmax, NumericMatrix report_delay_mat);
+RcppExport SEXP _covback_calculate_confirmation_incidence_new(SEXP onsetsSEXP, SEXP tmaxSEXP, SEXP report_delay_matSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericVector >::type onsets(onsetsSEXP);
+    Rcpp::traits::input_parameter< int >::type tmax(tmaxSEXP);
+    Rcpp::traits::input_parameter< NumericMatrix >::type report_delay_mat(report_delay_matSEXP);
+    rcpp_result_gen = Rcpp::wrap(calculate_confirmation_incidence_new(onsets, tmax, report_delay_mat));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -119,15 +170,40 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// calculate_all_incidences_new
+List calculate_all_incidences_new(double growth_rate, double growth_rate_imports, double t0, double t0_import, double i0, double import_propn, int imports_stop, NumericVector onset_probs, NumericMatrix report_delay_mat, int tmax);
+RcppExport SEXP _covback_calculate_all_incidences_new(SEXP growth_rateSEXP, SEXP growth_rate_importsSEXP, SEXP t0SEXP, SEXP t0_importSEXP, SEXP i0SEXP, SEXP import_propnSEXP, SEXP imports_stopSEXP, SEXP onset_probsSEXP, SEXP report_delay_matSEXP, SEXP tmaxSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< double >::type growth_rate(growth_rateSEXP);
+    Rcpp::traits::input_parameter< double >::type growth_rate_imports(growth_rate_importsSEXP);
+    Rcpp::traits::input_parameter< double >::type t0(t0SEXP);
+    Rcpp::traits::input_parameter< double >::type t0_import(t0_importSEXP);
+    Rcpp::traits::input_parameter< double >::type i0(i0SEXP);
+    Rcpp::traits::input_parameter< double >::type import_propn(import_propnSEXP);
+    Rcpp::traits::input_parameter< int >::type imports_stop(imports_stopSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type onset_probs(onset_probsSEXP);
+    Rcpp::traits::input_parameter< NumericMatrix >::type report_delay_mat(report_delay_matSEXP);
+    Rcpp::traits::input_parameter< int >::type tmax(tmaxSEXP);
+    rcpp_result_gen = Rcpp::wrap(calculate_all_incidences_new(growth_rate, growth_rate_imports, t0, t0_import, i0, import_propn, imports_stop, onset_probs, report_delay_mat, tmax));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_covback_daily_exp_interval_cpp", (DL_FUNC) &_covback_daily_exp_interval_cpp, 3},
     {"_covback_calculate_infection_incidence", (DL_FUNC) &_covback_calculate_infection_incidence, 8},
+    {"_covback_calculate_onset_probs", (DL_FUNC) &_covback_calculate_onset_probs, 3},
     {"_covback_calculate_onset_incidence", (DL_FUNC) &_covback_calculate_onset_incidence, 4},
+    {"_covback_calculate_onset_incidence_new", (DL_FUNC) &_covback_calculate_onset_incidence_new, 3},
     {"_covback_prob_not_symptomatic", (DL_FUNC) &_covback_prob_not_symptomatic, 3},
     {"_covback_calculate_infection_prevalence", (DL_FUNC) &_covback_calculate_infection_prevalence, 10},
+    {"_covback_calculate_reporting_delay_matrix", (DL_FUNC) &_covback_calculate_reporting_delay_matrix, 2},
     {"_covback_calculate_confirmation_incidence", (DL_FUNC) &_covback_calculate_confirmation_incidence, 4},
+    {"_covback_calculate_confirmation_incidence_new", (DL_FUNC) &_covback_calculate_confirmation_incidence_new, 3},
     {"_covback_calculate_all_incidences", (DL_FUNC) &_covback_calculate_all_incidences, 12},
+    {"_covback_calculate_all_incidences_new", (DL_FUNC) &_covback_calculate_all_incidences_new, 10},
     {NULL, NULL, 0}
 };
 
