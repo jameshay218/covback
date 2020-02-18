@@ -1,19 +1,32 @@
 library(ggplot2)
 
+tmax <- 75
+times <- 0:tmax
+
+## Incubation period draws and parameter values
+parTab <- read.csv("pars/partab_provinces.csv",stringsAsFactors=FALSE)
+parTab <- create_many_province_partab(parTab, 26, 100)
+provinces <- unique(parTab$province)
+provinces <- provinces[provinces != "all"]
+n_provinces <- length(provinces)
+
+## Generate some fake travel probabilities
 ## Daily probability of leaving the seed province
 ## Assume exportations stop halfway through
-tmax <- 100
-export_probs <- c(runif(tmax/2,0.001,0.01),rep(0,tmax/2 +1))
+
+export_probs <- c(runif(54,0.001,0.01),rep(0,75-54+1))
 
 ## Let's say 5 provinces - exportations get spread across these
-import_probs <- matrix(0, nrow=5, ncol=tmax+1)
-import_prob_averages <- runif(5, 0.1,0.8)
+import_probs <- matrix(0, nrow=n_provinces-1, ncol=tmax+1)
+import_prob_averages <- runif(n_provinces-1, 0.1,0.8)
 for(i in 1:nrow(import_probs)){
   import_probs[i,] <- runif(tmax+1, import_prob_averages[i]-0.05, import_prob_averages[i]+0.05)
 }
 ## Normalize
 import_probs_sums <- colSums(import_probs)
 import_probs <- t(apply(import_probs, 1, function(x) x/import_probs_sums))
+import_probs <- rbind(rep(1, tmax+1), import_probs)
+
 import_probs_tmp <- reshape2::melt(import_probs)
 colnames(import_probs_tmp) <- c("location","time","import_prop")
 ggplot(import_probs_tmp) + geom_line(aes(x=time,y=import_prop,col=as.factor(location)))
@@ -28,17 +41,19 @@ plot(rowSums(y_export), type='l', xlab="Days since t0", ylab="Probability of lea
 ## But if can only leave pre symptoms, then need to take into account
 ## probability that you haven't developed symptoms
 ## This gives the proportion of infections from each day that end up in other 
-x_export <- prob_leave_pre_symptoms_vector(y_export, 2.5, 6)
+presymptom_probs <- calculate_probs_presymptomatic(tmax, 2.5, 6)
+
+x_export <- prob_leave_pre_symptoms_vector(y_export, presymptom_probs)
 lines(x_export, col="red")
 legend(20, 0.4, legend=c("Probability of leaving at some point in the future",
                          "Probability of leaving before symptom onset"),
        col=c("black","red"),lty=c(1,1),cex=0.8)
 
 ## Now get probability of each exportation going to each province
-arrival_probs <- matrix(0, nrow=5, ncol=tmax+1)
-for(i in 1:nrow(import_probs)){
+arrival_probs <- matrix(0, nrow=n_provinces-1, ncol=tmax+1)
+for(i in 2:nrow(import_probs)){
   tmp <- prob_daily_arrival(export_probs, import_probs[i,], tmax)
-  arrival_probs[i,] <- prob_arrive_pre_symptoms_vector(tmp, 2.5, 6)
+  arrival_probs[i-1,] <- prob_arrive_pre_symptoms_vector(tmp, presymptom_probs)
 }
 lines(colSums(arrival_probs),col="green")
 
@@ -48,10 +63,11 @@ for(i in 1:nrow(arrival_probs)) {
   lines(arrival_probs[i,], col=i)
 }
 
-legend(60, 0.03, legend=c("Exportation probability",
+legend(0, 0.03, legend=c("Exportation probability",
                          "Importation probability (one province)"),
        col=c("purple","black"),lty=c(1,1),cex=0.8)
 
 ## How long each province's importation prob calculation takes per iteration
-times <- microbenchmark::microbenchmark(prob_arrive_pre_symptoms_vector(tmp, 2.5, 6))
+times <- microbenchmark::microbenchmark(prob_arrive_pre_symptoms_vector(tmp, presymptom_probs))
 ## 400 microseconds per solve, for 26 provinces and ~100000 iterations will take about 18 minutes extra
+## Actually way faster now if pre-compute presymptomatic probs

@@ -8,12 +8,16 @@ plot_simulations <- function(sim_dat){
 }
 
 #' @export
-plot_model_fit <- function(chain, parTab, data, confirm_delay_pars=NULL,nsamp=1000,
+plot_model_fit <- function(chain, parTab, data, confirm_delay_pars=NULL,
+                           daily_import_probs, daily_export_probs,
+                           nsamp=1000,
                            add_noise=TRUE, noise_ver="poisson"){
     imports_stop <- parTab[parTab$names == "import_stop","values"]
     dat_plot <- data %>% filter(var %in% c("date_report_observable", "date_infection_true"))
     dat1 <- data %>% filter(var == "date_report_observable") %>% select(date, n, province)
-    quants <- generate_prediction_intervals(chain, parTab, dat1, confirm_delay_pars, nsamp, add_noise, noise_ver)
+    quants <- generate_prediction_intervals(chain, parTab, dat1, confirm_delay_pars=confirm_delay_pars,
+                                            daily_import_probs = daily_import_probs, daily_export_probs = daily_export_probs,
+                                            nsamp, add_noise, noise_ver)
     quants1 <- quants %>% filter(var %in% c("infections","observations",
                                  "date_onset_true","date_infection_true"))
     p <- ggplot(quants1) +
@@ -28,9 +32,13 @@ plot_model_fit <- function(chain, parTab, data, confirm_delay_pars=NULL,nsamp=10
 }
 
 #' @export
-generate_prediction_intervals <- function(chain, parTab, data, confirm_delay_pars=NULL,nsamp=1000,
+generate_prediction_intervals <- function(chain, parTab, data, confirm_delay_pars=NULL,
+                                          daily_import_probs, daily_export_probs,
+                                          nsamp=1000,
                                           add_noise=TRUE, noise_ver="poisson"){
-    model_func <- create_model_func_provinces(parTab, data, confirm_delay_pars=confirm_delay_pars, ver="model")
+    model_func <- create_model_func_provinces(parTab, data, confirm_delay_pars=confirm_delay_pars,
+                                              daily_import_probs = daily_import_probs, daily_export_probs = daily_export_probs,
+                                              ver="model")
     par_names <- parTab$names
     
     samps <- sample(unique(chain$sampno), nsamp)

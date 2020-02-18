@@ -30,44 +30,54 @@ parTab <- read.csv("pars/partab_provinces.csv",stringsAsFactors=FALSE)
 # import_probs <- rbind(rep(1, tmax+1), import_probs)
 ## Real export probs
 export_probs <- read.csv("data/export_probs.csv")
-export_probs <- export_probs[1:50,]
+export_probs <- export_probs[1:60,]
 tmax <- nrow(export_probs)-1
 export_probs <- export_probs$prob_leaving
 
 ## Real import probs
 import_probs <- read.csv("data/import_probs.csv",header = TRUE)
-import_probs <- import_probs[1:50,]
+import_probs <- import_probs[1:60,]
 import_probs <- t(import_probs[,2:ncol(import_probs)])
+import_probs <- rbind(rep(1, ncol(import_probs)),import_probs)
 
 times <- 0:tmax
-parTab <- create_many_province_partab(parTab, 26, 100)
+parTab <- create_many_province_partab(parTab, 27, tmax)
 provinces <- unique(parTab$province)
 provinces <- provinces[provinces != "all"]
 n_provinces <- length(provinces)
-parTab[parTab$province == "1" & parTab$names == "t0","values"] <- 0
-parTab[parTab$province == "1" & parTab$names == "growth_rate","values"] <- 0.2
-parTab[parTab$province != "1" & parTab$names == "growth_rate","values"] <- 0.001
+#parTab[parTab$province == "1" & parTab$names == "t0","values"] <- 0
+#parTab[parTab$province == "1" & parTab$names == "growth_rate","values"] <- 0.2
+#parTab[parTab$province != "1" & parTab$names == "growth_rate","values"] <- 0.001
 ## Make strong prior on alpha and sigma
 prior_func <- create_incubation_prior(inc_period_draws)
 #prior_func <- NULL
 ## Generate some fake data
 
-gamma_changes <- generate_confirmation_delays(3, 1, 5, 10, 0.05,0.05,250)
-confirm_delay_pars <- gamma_changes$pars
+#gamma_changes <- generate_confirmation_delays(3, 1, 5, 10, 0.05,0.05,250)
+#confirm_delay_pars <- gamma_changes$pars
+confirm_delay_pars <- read.csv("data/fitted_confirm_delays.csv")
+confirm_delay_pars <- confirm_delay_pars %>%  select(shape, scale)
+confirm_delay_pars$date_onset <- 0:(nrow(confirm_delay_pars)-1)
+confirm_delay_pars <- confirm_delay_pars %>% filter(date_onset <= tmax)
 plot_reporting_landscape(confirm_delay_pars$shape, confirm_delay_pars$scale)
 
-sim_dat <- simulate_observed_data_provinces(parTab,tmax, tmax, gamma_changes$par,
+sim_dat <- simulate_observed_data_provinces(parTab,tmax, tmax, confirm_delay_pars,
                                             import_probs, export_probs, TRUE,"poisson")
 
 dat2 <- sim_dat$aggregated
 dat2$date <- as.Date(dat2$date, origin="12/01/2019", format="%m/%d/%Y")
-ggplot(dat2) + 
+p_dat <- ggplot(dat2) + 
   geom_line(aes(x=date,y=n,col=var)) +
   #scale_y_log10() +
   scale_x_date(breaks="7 days") +
   theme(axis.text.x=element_text(angle=45,hjust=1)) +
-  facet_wrap(~province,scales="free_y")# +
+  facet_wrap(~province,scales="free_y", ncol=5)# +
 #  scale_x_date()
+
+pdf("sim_dat.pdf",height=12,width=15)
+p_dat
+dev.off()
+
 dat1 <- sim_dat$aggregated %>% filter(var=="date_report_observable") %>% select(-var)
 
 ## Check that posterior works
@@ -92,10 +102,11 @@ startTab[startTab$names %in% c("weibull_alpha","weibull_sigma"),"values"] <- c(2
 ## Run first chain
 mcmcPars <- c("iterations"=50000,"popt"=0.44,"opt_freq"=5000,
               "thin"=10,"adaptive_period"=20000,"save_block"=100)
+startTab[startTab$province=="all","fixed"] <- 1
 output <- run_MCMC(parTab=startTab, data=dat1, mcmcPars=mcmcPars, filename="test",
                    CREATE_POSTERIOR_FUNC=create_model_func_provinces, mvrPars=NULL,
                    PRIOR_FUNC = prior_func, OPT_TUNING=0.2,
-                   confirm_delay_pars=gamma_changes$pars,
+                   confirm_delay_pars=confirm_delay_pars,
                    daily_import_probs = import_probs, daily_export_probs = export_probs,
                    ver="posterior")
 

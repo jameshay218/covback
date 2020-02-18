@@ -102,16 +102,24 @@ NumericVector calculate_confirmation_incidence(NumericVector onsets, int tmax,Nu
 
 
 //[[Rcpp::export]]
-List calculate_all_incidences(double growth_rate, double growth_rate_imports, 
-                              double t0, double t0_import, double i0, double import_propn,
-                              int imports_stop, NumericVector onset_probs, NumericMatrix report_delay_mat,
+List calculate_all_incidences(double growth_rate, double t0, double i0, NumericVector import_cases,
+			      NumericVector onset_probs, NumericMatrix report_delay_mat,
                               int tmax){
-  NumericVector infections = calculate_infection_incidence(growth_rate, growth_rate_imports,
-                                                           tmax, t0, t0_import, i0, import_propn, imports_stop);
-  NumericVector onsets = calculate_onset_incidence_new(infections, onset_probs, tmax);
-  NumericVector confirmations = calculate_confirmation_incidence_new(onsets, tmax, report_delay_mat);
+  NumericVector infections = i0*daily_exp_interval_cpp(growth_rate, tmax, t0);
+  infections = infections + import_cases;
+  NumericVector onsets = calculate_onset_incidence(infections, onset_probs, tmax);
+  NumericVector confirmations = calculate_confirmation_incidence(onsets, tmax, report_delay_mat);
   
   List res = List::create(Named("infections")=infections,Named("onsets")=onsets,Named("confirmations")=confirmations);
   return(res);
+}
+
+
+
+//[[Rcpp::export]]
+double prob_not_symptomatic(double weibull_alpha, double weibull_sigma, double t){
+  // Prob that you beame symptomatic in or before this time interval
+  double prob = R::pweibull(t+1, weibull_alpha, weibull_sigma,true,false);
+  return(1.0-prob);
 }
 

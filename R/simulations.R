@@ -1,5 +1,7 @@
 #' @export
-simulate_observed_data_provinces <- function(parTab, tmax, treport=tmax, confirm_delay_pars=NULL, add_noise=TRUE, noise_ver="poisson"){
+simulate_observed_data_provinces <- function(parTab, tmax, treport=tmax, confirm_delay_pars=NULL,
+                                             daily_import_probs, daily_export_probs,
+                                             add_noise=TRUE, noise_ver="poisson"){
     times <- 0:tmax
     pars_all <- parTab$values
     names(pars_all) <- parTab$names
@@ -12,7 +14,9 @@ simulate_observed_data_provinces <- function(parTab, tmax, treport=tmax, confirm
     }
     
     ## Simulate the deterministic version
-    f <- create_model_func_provinces(parTab, tmax=tmax,confirm_delay_pars=confirm_delay_pars,ver="model")
+    f <- create_model_func_provinces(parTab, tmax=tmax,confirm_delay_pars=confirm_delay_pars,
+                                     daily_import_probs = daily_import_probs, daily_export_probs = daily_export_probs,
+                                     ver="model")
     res <- f(parTab$values)
 
     ## Put into tibbles

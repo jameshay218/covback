@@ -13,6 +13,16 @@ NumericVector calculate_onset_probs(int tmax, double weibull_alpha, double weibu
   return(probs);
 }
 
+//[[Rcpp::export]]
+NumericVector calculate_probs_presymptomatic(int tmax, double weibull_alpha, double weibull_sigma){
+  NumericVector probs(tmax+1);
+  for(int t = 0; t <= tmax; ++t){
+    probs[t] = 1 - R::pweibull(t, weibull_alpha, weibull_sigma, true, false);
+  }
+  return(probs);
+}
+
+
 /////////////////////////////////////
 // EXPORTATION PROBABILITIES
 /////////////////////////////////////
@@ -59,7 +69,7 @@ NumericMatrix prob_leave_on_day(NumericVector probs, int tmax){
 }
 
 //[[Rcpp::export]]
-NumericMatrix prob_leave_pre_symptoms(NumericMatrix leave_matrix, double weibull_alpha, double weibull_sigma){
+NumericMatrix prob_leave_pre_symptoms(NumericMatrix leave_matrix, NumericVector presymptom_probs){
   int n_col = leave_matrix.ncol();
   int n_row = leave_matrix.nrow();
   NumericMatrix probs(n_row, n_col);
@@ -70,15 +80,15 @@ NumericMatrix prob_leave_pre_symptoms(NumericMatrix leave_matrix, double weibull
     for(int j = t; j < n_col; ++j){
       // What proportion of infections on this day leave by each day in the future given that they haven't
       // yet experienced symptoms?
-      probs(t, j) = leave_matrix(t, j)*(1-R::pweibull(j-t, weibull_alpha, weibull_sigma, true, false));
+      probs(t, j) = leave_matrix(t, j)*presymptom_probs[j-t];//(1-R::pweibull(j-t, weibull_alpha, weibull_sigma, true, false));
     }
   }
   return(probs);  
 }
 
 //[[Rcpp::export]]
-NumericVector prob_leave_pre_symptoms_vector(NumericMatrix leave_matrix, double weibull_alpha, double weibull_sigma){
-  NumericMatrix res = prob_leave_pre_symptoms(leave_matrix, weibull_alpha, weibull_sigma);
+NumericVector prob_leave_pre_symptoms_vector(NumericMatrix leave_matrix,NumericVector presymptom_probs){ //double weibull_alpha, double weibull_sigma){
+  NumericMatrix res = prob_leave_pre_symptoms(leave_matrix, presymptom_probs);//weibull_alpha, weibull_sigma);
   return(rowSums(res));
 }
 
@@ -111,7 +121,7 @@ NumericVector prob_daily_arrival(NumericVector export_probs, NumericVector impor
 }
 
 //[[Rcpp::export]]
-NumericMatrix prob_arrive_pre_symptoms(NumericMatrix arrive_matrix, double weibull_alpha, double weibull_sigma){
+NumericMatrix prob_arrive_pre_symptoms(NumericMatrix arrive_matrix, NumericVector presymptom_probs){//double weibull_alpha, double weibull_sigma){
   int n_col = arrive_matrix.ncol();
   int n_row = arrive_matrix.nrow();
   NumericMatrix probs(n_row, n_col);
@@ -122,14 +132,14 @@ NumericMatrix prob_arrive_pre_symptoms(NumericMatrix arrive_matrix, double weibu
     for(int j = t; j < n_col; ++j){
       // What proportion of infections on this day leave by each day in the future given that they haven't
       // yet experienced symptoms?
-      probs(t, j) = arrive_matrix(t, j)*(1-R::pweibull(j-t, weibull_alpha, weibull_sigma, true, false));
+      probs(t, j) = arrive_matrix(t, j)*presymptom_probs[j-t];//(1-R::pweibull(j-t, weibull_alpha, weibull_sigma, true, false));
     }
   }
   return(probs);  
 }
 
 //[[Rcpp::export]]
-NumericVector prob_arrive_pre_symptoms_vector(NumericMatrix arrive_matrix, double weibull_alpha, double weibull_sigma){
-  NumericMatrix res = prob_arrive_pre_symptoms(arrive_matrix, weibull_alpha, weibull_sigma);
+NumericVector prob_arrive_pre_symptoms_vector(NumericMatrix arrive_matrix, NumericVector presymptom_probs){//double weibull_alpha, double weibull_sigma){
+  NumericMatrix res = prob_arrive_pre_symptoms(arrive_matrix, presymptom_probs);//weibull_alpha, weibull_sigma);
   return(rowSums(res));
 }

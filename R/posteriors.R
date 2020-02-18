@@ -31,6 +31,15 @@ create_model_func_provinces <- function(parTab, data=NULL, PRIOR_FUNC=NULL,
         bigT <- tmax + 1
     }
 
+    ## Exportation and importation probabilities
+    leave_matrix <- prob_leave_on_day(daily_export_probs, tmax)
+    ## For each province, what's the daily probability of receiving a person from the seed province?
+    arrival_matrices <- NULL
+    ## First province isn't meaningful
+    for (i in 1:n_provinces){
+        arrival_matrices[[i]] <- prob_daily_arrival(daily_export_probs, daily_import_probs[i,], tmax)
+    }
+    
     ## If time-varying parameters not specified, enumerate out the point
     ## estimates
     ## Move into model func call if need to estimate these...
@@ -56,11 +65,19 @@ create_model_func_provinces <- function(parTab, data=NULL, PRIOR_FUNC=NULL,
         weibull_alpha <- pars_all["weibull_alpha"]
         weibull_sigma <- pars_all["weibull_sigma"]
         
+        ## For each day with a potential infection onset, get the probability of leaving at some point in the future before
+        ## symptom onset
+        ## daily_prob_leaving <- prob_left_pre_sympt(pars_seed["export_prob"], weibull_alpha, weibull_sigma, 100)
+        presymptom_probs <- calculate_probs_presymptomatic(tmax, weibull_alpha, weibull_sigma)
+        daily_prob_leaving <- prob_leave_pre_symptoms_vector(leave_matrix, presymptom_probs)
         
-        daily_prob_leaving <- prob_left_pre_sympt(pars_seed["export_prob"], weibull_alpha, weibull_sigma, 100)
 
         onset_probs <- calculate_onset_probs(tmax, weibull_alpha, weibull_sigma)
- 
+
+
+        ## Get local growth of seed province. Will add/subtract this from later estimates
+        infections_seed <- daily_exp_interval_cpp(pars_seed["growth_rate"], tmax, pars_seed["t0"])
+        
         all_infections <- numeric(bigT*n_provinces)
         all_confirmations <- numeric(bigT*n_provinces)
         all_onsets <- numeric(bigT*n_provinces)
@@ -75,28 +92,29 @@ create_model_func_provinces <- function(parTab, data=NULL, PRIOR_FUNC=NULL,
             ## If province 1, then export_propn cases are lost
             ## Otherwise, some proportion of these lost cases are gained elsewhere
             if(province == "1") {
-                export_propn <- -daily_prob_leaving
+                ## Cases that leave seed province
+                import_cases <- -1 * daily_prob_leaving * infections_seed
                 t0 <- pars_seed["t0"]
-                t0_import <- pars_seed["t0"]
             } else {
+                ## Otherwise, cases that come from seed province
+                daily_prob_arrival <- prob_arrive_pre_symptoms_vector(arrival_matrices[[index]], presymptom_probs)
+                import_cases <- daily_prob_arrival * infections_seed
+
+                ## t0 is days since t0 in seed province
                 t0_import <- pars_seed["t0"]
                 t0 <- pars["t0"] + t0_import
                 t0 <- min(t0, tmax-1)
-                export_propn <- daily_prob_leaving * (pars["import_propn"])#/propn_imports
             }
             
             ## Growth model
             growth_rate <- pars["growth_rate"]
             i0 <- pars["i0"]
             
-            ## Import model
-            growth_rate_imports <- pars_seed["growth_rate"] ## Important, growth rate from province 1
-            imports_stop <- pars["imports_stop"]
             ## Solve model for this province
             #res <- calculate_all_incidences(growth_rate, growth_rate_imports, t0, t0_import, i0, export_propn, imports_stop,
             #                                weibull_alpha, weibull_sigma, confirm_delay_pars$shape, confirm_delay_pars$scale,
             #                                tmax)
-            res <- calculate_all_incidences_new(growth_rate, growth_rate_imports, t0, t0_import, i0, export_propn, imports_stop,
+            res <- calculate_all_incidences(growth_rate, t0, i0, import_cases,
                                             onset_probs, report_delay_mat,
                                             tmax)
             ## Extract the 3 incidence types
