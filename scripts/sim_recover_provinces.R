@@ -1,22 +1,12 @@
-setwd("~/GitHub/covback")
+setwd("~/Documents/covback")
 Rcpp::compileAttributes()
 devtools::document()
 devtools::load_all()
 
-probs <- c(runif(50,0.001,0.01),rep(0,50))
-
-#probs <- c(rep(0.01, 50), rep(0,150))
-#probs <- rep(0.01, 100)
-y <- prob_leave_on_day(probs, 100)
-#y <- y[,1:100]
-## This gives the proportion of infections from each day that end up in other 
-x <- prob_leave_pre_symptoms(y, 2.5, 6)
-plot(y[2,])
-
 library(lazymcmc)
 library(tidyverse)
 
-inc_period_draws <- read.csv("~/Github/case_to_infection/data/backer_weibull_draws.csv",stringsAsFactors=FALSE)
+inc_period_draws <- read.csv("~/Documents/case_to_infection/data/backer_weibull_draws.csv",stringsAsFactors=FALSE)
 parTab <- read.csv("pars/partab_provinces.csv",stringsAsFactors=FALSE)
 parTab <- create_many_province_partab(parTab, 26, 100)
 

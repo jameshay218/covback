@@ -41,6 +41,58 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// prob_leave_pre_symptoms_vector
+NumericVector prob_leave_pre_symptoms_vector(NumericMatrix leave_matrix, double weibull_alpha, double weibull_sigma);
+RcppExport SEXP _covback_prob_leave_pre_symptoms_vector(SEXP leave_matrixSEXP, SEXP weibull_alphaSEXP, SEXP weibull_sigmaSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericMatrix >::type leave_matrix(leave_matrixSEXP);
+    Rcpp::traits::input_parameter< double >::type weibull_alpha(weibull_alphaSEXP);
+    Rcpp::traits::input_parameter< double >::type weibull_sigma(weibull_sigmaSEXP);
+    rcpp_result_gen = Rcpp::wrap(prob_leave_pre_symptoms_vector(leave_matrix, weibull_alpha, weibull_sigma));
+    return rcpp_result_gen;
+END_RCPP
+}
+// prob_daily_arrival
+NumericVector prob_daily_arrival(NumericVector export_probs, NumericVector import_probs, int tmax);
+RcppExport SEXP _covback_prob_daily_arrival(SEXP export_probsSEXP, SEXP import_probsSEXP, SEXP tmaxSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericVector >::type export_probs(export_probsSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type import_probs(import_probsSEXP);
+    Rcpp::traits::input_parameter< int >::type tmax(tmaxSEXP);
+    rcpp_result_gen = Rcpp::wrap(prob_daily_arrival(export_probs, import_probs, tmax));
+    return rcpp_result_gen;
+END_RCPP
+}
+// prob_arrive_pre_symptoms
+NumericMatrix prob_arrive_pre_symptoms(NumericMatrix arrive_matrix, double weibull_alpha, double weibull_sigma);
+RcppExport SEXP _covback_prob_arrive_pre_symptoms(SEXP arrive_matrixSEXP, SEXP weibull_alphaSEXP, SEXP weibull_sigmaSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericMatrix >::type arrive_matrix(arrive_matrixSEXP);
+    Rcpp::traits::input_parameter< double >::type weibull_alpha(weibull_alphaSEXP);
+    Rcpp::traits::input_parameter< double >::type weibull_sigma(weibull_sigmaSEXP);
+    rcpp_result_gen = Rcpp::wrap(prob_arrive_pre_symptoms(arrive_matrix, weibull_alpha, weibull_sigma));
+    return rcpp_result_gen;
+END_RCPP
+}
+// prob_arrive_pre_symptoms_vector
+NumericVector prob_arrive_pre_symptoms_vector(NumericMatrix arrive_matrix, double weibull_alpha, double weibull_sigma);
+RcppExport SEXP _covback_prob_arrive_pre_symptoms_vector(SEXP arrive_matrixSEXP, SEXP weibull_alphaSEXP, SEXP weibull_sigmaSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericMatrix >::type arrive_matrix(arrive_matrixSEXP);
+    Rcpp::traits::input_parameter< double >::type weibull_alpha(weibull_alphaSEXP);
+    Rcpp::traits::input_parameter< double >::type weibull_sigma(weibull_sigmaSEXP);
+    rcpp_result_gen = Rcpp::wrap(prob_arrive_pre_symptoms_vector(arrive_matrix, weibull_alpha, weibull_sigma));
+    return rcpp_result_gen;
+END_RCPP
+}
 // daily_exp_interval_cpp
 NumericVector daily_exp_interval_cpp(double growth, int tmax, double t0);
 RcppExport SEXP _covback_daily_exp_interval_cpp(SEXP growthSEXP, SEXP tmaxSEXP, SEXP t0SEXP) {
@@ -248,6 +300,10 @@ static const R_CallMethodDef CallEntries[] = {
     {"_covback_prob_not_left_per_day", (DL_FUNC) &_covback_prob_not_left_per_day, 1},
     {"_covback_prob_leave_on_day", (DL_FUNC) &_covback_prob_leave_on_day, 2},
     {"_covback_prob_leave_pre_symptoms", (DL_FUNC) &_covback_prob_leave_pre_symptoms, 3},
+    {"_covback_prob_leave_pre_symptoms_vector", (DL_FUNC) &_covback_prob_leave_pre_symptoms_vector, 3},
+    {"_covback_prob_daily_arrival", (DL_FUNC) &_covback_prob_daily_arrival, 3},
+    {"_covback_prob_arrive_pre_symptoms", (DL_FUNC) &_covback_prob_arrive_pre_symptoms, 3},
+    {"_covback_prob_arrive_pre_symptoms_vector", (DL_FUNC) &_covback_prob_arrive_pre_symptoms_vector, 3},
     {"_covback_daily_exp_interval_cpp", (DL_FUNC) &_covback_daily_exp_interval_cpp, 3},
     {"_covback_calculate_infection_incidence", (DL_FUNC) &_covback_calculate_infection_incidence, 8},
     {"_covback_calculate_infection_incidence_time", (DL_FUNC) &_covback_calculate_infection_incidence_time, 7},

@@ -13,6 +13,22 @@ prob_leave_pre_symptoms <- function(leave_matrix, weibull_alpha, weibull_sigma) 
     .Call('_covback_prob_leave_pre_symptoms', PACKAGE = 'covback', leave_matrix, weibull_alpha, weibull_sigma)
 }
 
+prob_leave_pre_symptoms_vector <- function(leave_matrix, weibull_alpha, weibull_sigma) {
+    .Call('_covback_prob_leave_pre_symptoms_vector', PACKAGE = 'covback', leave_matrix, weibull_alpha, weibull_sigma)
+}
+
+prob_daily_arrival <- function(export_probs, import_probs, tmax) {
+    .Call('_covback_prob_daily_arrival', PACKAGE = 'covback', export_probs, import_probs, tmax)
+}
+
+prob_arrive_pre_symptoms <- function(arrive_matrix, weibull_alpha, weibull_sigma) {
+    .Call('_covback_prob_arrive_pre_symptoms', PACKAGE = 'covback', arrive_matrix, weibull_alpha, weibull_sigma)
+}
+
+prob_arrive_pre_symptoms_vector <- function(arrive_matrix, weibull_alpha, weibull_sigma) {
+    .Call('_covback_prob_arrive_pre_symptoms_vector', PACKAGE = 'covback', arrive_matrix, weibull_alpha, weibull_sigma)
+}
+
 #' @export
 daily_exp_interval_cpp <- function(growth, tmax, t0) {
     .Call('_covback_daily_exp_interval_cpp', PACKAGE = 'covback', growth, tmax, t0)
