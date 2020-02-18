@@ -9,6 +9,10 @@ prob_leave_on_day <- function(probs, tmax) {
     .Call('_covback_prob_leave_on_day', PACKAGE = 'covback', probs, tmax)
 }
 
+prob_leave_pre_symptoms <- function(leave_matrix, weibull_alpha, weibull_sigma) {
+    .Call('_covback_prob_leave_pre_symptoms', PACKAGE = 'covback', leave_matrix, weibull_alpha, weibull_sigma)
+}
+
 #' @export
 daily_exp_interval_cpp <- function(growth, tmax, t0) {
     .Call('_covback_daily_exp_interval_cpp', PACKAGE = 'covback', growth, tmax, t0)
