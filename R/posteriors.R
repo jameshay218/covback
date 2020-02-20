@@ -40,17 +40,7 @@ create_model_func_provinces <- function(parTab, data=NULL, PRIOR_FUNC=NULL,
         arrival_matrices[[i]] <- prob_daily_arrival(daily_export_probs, daily_import_probs[i,], tmax)
     }
     
-    ## If time-varying parameters not specified, enumerate out the point
-    ## estimates
-    ## Move into model func call if need to estimate these...
-    if (is.null(confirm_delay_pars)) {
-      gamma_shape <- shape
-      gamma_scale <- scale
-      confirm_delay_pars <- tibble(date_onset=0:tmax, shape=gamma_shape, scale=gamma_scale)
-    }
-    report_delay_mat <- calculate_reporting_delay_matrix(confirm_delay_pars$shape, confirm_delay_pars$scale)
-    
-    model_func <- function(pars_all) {
+     model_func <- function(pars_all) {
         names(pars_all) <- par_names
         pars_seed <- pars_all[which(par_provinces == "1")]
         
@@ -58,6 +48,16 @@ create_model_func_provinces <- function(parTab, data=NULL, PRIOR_FUNC=NULL,
         shape <- pars_all["shape"]
         scale <- pars_all["scale"]
 
+        ## If time-varying parameters not specified, enumerate out the point
+        ## estimates
+        ## Move into model func call if need to estimate these...
+        if (is.null(confirm_delay_pars)) {
+            gamma_shape <- shape
+            gamma_scale <- scale
+            confirm_delay_pars <- tibble(date_onset=0:tmax, shape=gamma_shape, scale=gamma_scale)
+        }
+        report_delay_mat <- calculate_reporting_delay_matrix(confirm_delay_pars$shape, confirm_delay_pars$scale)
+        
         ## Negative binomial size
         size <- pars_all["size"]
 
@@ -144,9 +144,9 @@ create_model_func_provinces <- function(parTab, data=NULL, PRIOR_FUNC=NULL,
             return(all_dat)
         } else {
             if (noise_ver == "poisson") {
-                lik <- sum(dpois(x=cases, all_confirmations, log=TRUE))
+                lik <- sum(dpois(x=cases, all_confirmations, log=TRUE),na.rm=TRUE)
             } else {
-                lik <- sum(dnbinom(x=cases,mu=all_confirmations,size=size,log=TRUE))
+                lik <- sum(dnbinom(x=cases,mu=all_confirmations,size=size,log=TRUE),na.rm=TRUE)
             }
             if (!is.null(PRIOR_FUNC)) {
                 lik <- lik + PRIOR_FUNC(pars)
