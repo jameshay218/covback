@@ -113,7 +113,11 @@ create_model_func_provinces <- function(parTab, data=NULL, PRIOR_FUNC=NULL,
             ## Solve model for this province
             #res <- calculate_all_incidences(growth_rate, growth_rate_imports, t0, t0_import, i0, export_propn, imports_stop,
             #                                weibull_alpha, weibull_sigma, confirm_delay_pars$shape, confirm_delay_pars$scale,
-            #                                tmax)
+                                        #                                tmax)
+            ## Really preliminary playing
+            import_cases_local <- Hmisc::Lag(import_cases*pars["local_r"], pars_all["serial_interval"])
+            import_cases_local[is.na(import_cases_local)] <- 0
+            import_cases <- import_cases + import_cases_local
             res <- calculate_all_incidences(growth_rate, t0, i0, import_cases,
                                             onset_probs, report_delay_mat,
                                             tmax)

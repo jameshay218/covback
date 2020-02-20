@@ -71,7 +71,8 @@ parTab[parTab$names == "growth_rate" & parTab$province != "1","values"] <- 0.000
 parTab[parTab$names == "growth_rate" & parTab$province != "1","fixed"] <- 1
 parTab[parTab$names == "t0" & parTab$province != "1","values"] <- 0.00001
 parTab[parTab$names == "t0" & parTab$province != "1","fixed"] <- 1
-parTab[parTab$names == "t0" & parTab$province == "1",c("lower_start","upper_start")] <- c(30,40)
+parTab[parTab$names == "t0" & parTab$province == "1",c("lower_bound")] <- c(31)
+parTab[parTab$names == "t0" & parTab$province == "1",c("lower_start","upper_start")] <- c(31,40)
 
 parTab[parTab$names %in% c("shape","scale"),"fixed"] <- 0
 confirm_delay_pars <- NULL
@@ -98,13 +99,13 @@ startTab[startTab$names %in% c("weibull_alpha","weibull_sigma"),"values"] <- c(2
 
 ## MCMC
 ## Run first chain
-mcmcPars <- c("iterations"=30000,"popt"=0.44,"opt_freq"=1000,
-              "thin"=10,"adaptive_period"=10000,"save_block"=100)
+mcmcPars <- c("iterations"=200000,"popt"=0.44,"opt_freq"=2000,
+              "thin"=10,"adaptive_period"=50000,"save_block"=1000)
 #startTab[startTab$province=="all","fixed"] <- 1
 
 confirmed_data1 <- confirmed_data %>% mutate(n=ifelse(province=="1", NA, n))
 
-output <- run_MCMC(parTab=startTab, data=confirmed_data1, mcmcPars=mcmcPars, filename="test",
+output <- run_MCMC(parTab=startTab, data=confirmed_data1, mcmcPars=mcmcPars, filename="december_start",
                    CREATE_POSTERIOR_FUNC=create_model_func_provinces, mvrPars=NULL,
                    PRIOR_FUNC = prior_func, OPT_TUNING=0.2,
                    confirm_delay_pars=confirm_delay_pars,
@@ -123,9 +124,9 @@ mvrPars <- list(covMat,0.1,w=0.8)
 startTab$values <- best_pars
 
 ## Run second chain
-mcmcPars <- c("iterations"=50000,"popt"=0.234,"opt_freq"=200,
-              "thin"=10,"adaptive_period"=20000,"save_block"=100)
-output <- run_MCMC(parTab=startTab, data=confirmed_data1, mcmcPars=mcmcPars, filename="test",
+mcmcPars <- c("iterations"=500000,"popt"=0.234,"opt_freq"=1000,
+              "thin"=10,"adaptive_period"=100000,"save_block"=1000)
+output <- run_MCMC(parTab=startTab, data=confirmed_data1, mcmcPars=mcmcPars, filename="december_start",
                    CREATE_POSTERIOR_FUNC=create_model_func_provinces, mvrPars=mvrPars,
                    PRIOR_FUNC = prior_func, OPT_TUNING=0.2,
                    confirm_delay_pars=confirm_delay_pars,
@@ -162,9 +163,35 @@ p <- ggplot(quants1[quants1$var %in% c("infections","observations","onsets"),]) 
   facet_wrap(~province,ncol=5,scales="free_y")
 p
 
+ggplot(quants[quants$province == "Hubei" & quants$date <= "2020-01-23",]) + 
+  geom_line(aes(x=date,y=median,col=var)) + 
+  geom_ribbon(aes(x=date,ymin=lower,ymax=upper,fill=var),alpha=0.25)
+
+
 p <- plot_model_fit(chain, parTab, confirmed_data,confirm_delay_pars=confirm_delay_pars,
                     daily_import_probs = import_probs, daily_export_probs = export_probs,
                     nsamp=100)
 pdf("tmp.pdf",height=12,width=10)
 p + theme(legend.position=c(0.8,0.1))
 dev.off()
+
+library(data.table)
+tmp <- chain[,colnames(chain) %like% "local_r"]
+colnames(tmp) <- unique(confirmed_data2$province)
+tmp1 <- reshape2::melt(tmp)
+ggplot(tmp1) + 
+  geom_violin(aes(x=variable, y=value), fill="grey70",
+              draw_quantiles=c(0.025,0.5,0.975),scale="width") + 
+  theme_bw() + 
+  theme(axis.text.x=element_text(angle=45,hjust=1)) + 
+  ylab("Average number of local cases per import") + xlab("Province") + 
+  scale_y_continuous(expand=c(0,0))
+
+r0_ests <- read_csv("data/r0_ests.csv")
+
+r0_ests <- r0_ests %>% select(Location,Value)
+colnames(r0_ests) <- c("province","r0")
+
+tmp2 <- plyr::ddply(tmp1, ~variable, function(x) mean(x$value))
+colnames(tmp2) <- c("province","local_r")
+wow <- merge(r0_ests, tmp2)

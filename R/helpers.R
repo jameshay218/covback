@@ -38,26 +38,26 @@ create_many_province_partab <- function(parTab_start, n_provinces,tmax=100){
   parTab_top <- parTab_start[parTab_start$province == "all",]
   provinces <- as.character(seq_len(n_provinces))
   parTab <- NULL
-  parTab_province1 <- data.frame(values=c(0,1,0),
-                                 names=c("growth_rate","i0","t0"),
+  parTab_province1 <- data.frame(values=c(0,1,0,0),
+                                 names=c("growth_rate","i0","t0","local_r"),
                                  province="1",
-                                 fixed=c(0,1,0),
-                                 lower_bound=c(0,0,0),
-                                 upper_bound=c(0.2,100,31),
+                                 fixed=c(0,1,0,1),
+                                 lower_bound=c(0,0,0,0),
+                                 upper_bound=c(0.2,100,31,1),
                                  steps=0.1,
-                                 lower_start=c(0.1,1,0),
-                                 upper_start=c(0.12,1,10),stringsAsFactors = FALSE)
+                                 lower_start=c(0.1,1,0,0),
+                                 upper_start=c(0.12,1,10,1),stringsAsFactors = FALSE)
   parTab_province1 <- generate_start_tab(parTab_province1)
   for(province in provinces[2:length(provinces)]){
-    parTab_province <- data.frame(values=c(0,1,0),
-                                  names=c("growth_rate","i0","t0"),
+    parTab_province <- data.frame(values=c(0,1,0,0.2),
+                                  names=c("growth_rate","i0","t0","local_r"),
                                   province=province,
-                                  fixed=c(0,1,0),
-                                  lower_bound=c(0,0,0),
-                                  upper_bound=c(0.2,1,40),
+                                  fixed=c(0,1,0,0),
+                                  lower_bound=c(0,0,0,0),
+                                  upper_bound=c(0.2,1,40,10),
                                   steps=0.1,
-                                  lower_start=c(0.05,1,10),
-                                  upper_start=c(0.15,1,40),stringsAsFactors = FALSE)
+                                  lower_start=c(0.05,1,10,0),
+                                  upper_start=c(0.15,1,40,1),stringsAsFactors = FALSE)
     parTab_province <- generate_start_tab(parTab_province)
     parTab <- bind_rows(parTab, parTab_province)
   }
