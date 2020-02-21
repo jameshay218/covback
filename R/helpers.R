@@ -65,3 +65,15 @@ create_many_province_partab <- function(parTab_start, n_provinces,tmax=100){
   parTab <- bind_rows(parTab_top, parTab_province1, parTab)
   return(parTab)
 }
+
+
+#' @export
+calculate_reporting_delay_matrix_constant  <- function(shape, scale, tmax){
+    full_dist <- pgamma(tmax+1 - (0:tmax), shape=shape, scale=scale) - pgamma(tmax - (0:tmax), shape=shape, scale=scale)
+
+    use <- matrix(0,nrow=tmax+1, ncol=tmax+1)
+    for(t in 0:tmax){
+        use[t+1,1:(t+1)] <- full_dist[(tmax-t+1):(tmax+1)]
+    }
+    use
+}

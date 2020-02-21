@@ -31,6 +31,19 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// calculate_serial_interval_probs
+NumericVector calculate_serial_interval_probs(int tmax, double lnorm_mean, double lnorm_sd);
+RcppExport SEXP _covback_calculate_serial_interval_probs(SEXP tmaxSEXP, SEXP lnorm_meanSEXP, SEXP lnorm_sdSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< int >::type tmax(tmaxSEXP);
+    Rcpp::traits::input_parameter< double >::type lnorm_mean(lnorm_meanSEXP);
+    Rcpp::traits::input_parameter< double >::type lnorm_sd(lnorm_sdSEXP);
+    rcpp_result_gen = Rcpp::wrap(calculate_serial_interval_probs(tmax, lnorm_mean, lnorm_sd));
+    return rcpp_result_gen;
+END_RCPP
+}
 // prob_not_left_per_day
 NumericVector prob_not_left_per_day(NumericVector probs);
 RcppExport SEXP _covback_prob_not_left_per_day(SEXP probsSEXP) {
@@ -145,6 +158,19 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// calculate_local_from_import_infections
+NumericVector calculate_local_from_import_infections(NumericVector imported_infections, NumericVector serial_probs, int tmax);
+RcppExport SEXP _covback_calculate_local_from_import_infections(SEXP imported_infectionsSEXP, SEXP serial_probsSEXP, SEXP tmaxSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericVector >::type imported_infections(imported_infectionsSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type serial_probs(serial_probsSEXP);
+    Rcpp::traits::input_parameter< int >::type tmax(tmaxSEXP);
+    rcpp_result_gen = Rcpp::wrap(calculate_local_from_import_infections(imported_infections, serial_probs, tmax));
+    return rcpp_result_gen;
+END_RCPP
+}
 // calculate_onset_incidence
 NumericVector calculate_onset_incidence(NumericVector infections, NumericVector onset_probs, int tmax);
 RcppExport SEXP _covback_calculate_onset_incidence(SEXP infectionsSEXP, SEXP onset_probsSEXP, SEXP tmaxSEXP) {
@@ -217,6 +243,7 @@ END_RCPP
 static const R_CallMethodDef CallEntries[] = {
     {"_covback_calculate_onset_probs", (DL_FUNC) &_covback_calculate_onset_probs, 3},
     {"_covback_calculate_probs_presymptomatic", (DL_FUNC) &_covback_calculate_probs_presymptomatic, 3},
+    {"_covback_calculate_serial_interval_probs", (DL_FUNC) &_covback_calculate_serial_interval_probs, 3},
     {"_covback_prob_not_left_per_day", (DL_FUNC) &_covback_prob_not_left_per_day, 1},
     {"_covback_prob_leave_on_day", (DL_FUNC) &_covback_prob_leave_on_day, 2},
     {"_covback_prob_leave_pre_symptoms", (DL_FUNC) &_covback_prob_leave_pre_symptoms, 2},
@@ -226,6 +253,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_covback_prob_arrive_pre_symptoms_vector", (DL_FUNC) &_covback_prob_arrive_pre_symptoms_vector, 2},
     {"_covback_daily_exp_interval_cpp", (DL_FUNC) &_covback_daily_exp_interval_cpp, 3},
     {"_covback_calculate_infection_incidence_time", (DL_FUNC) &_covback_calculate_infection_incidence_time, 7},
+    {"_covback_calculate_local_from_import_infections", (DL_FUNC) &_covback_calculate_local_from_import_infections, 3},
     {"_covback_calculate_onset_incidence", (DL_FUNC) &_covback_calculate_onset_incidence, 3},
     {"_covback_calculate_reporting_delay_matrix", (DL_FUNC) &_covback_calculate_reporting_delay_matrix, 2},
     {"_covback_calculate_confirmation_incidence", (DL_FUNC) &_covback_calculate_confirmation_incidence, 3},

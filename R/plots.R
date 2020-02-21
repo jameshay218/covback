@@ -115,3 +115,65 @@ plot_reporting_landscape <- function(shapes, scales){
     theme_bw() + 
     theme(legend.position=c(0.2,0.7))
 }
+
+#' @export
+plot_confirm_delay <- function(chain, nsamp=100,xmax=40){
+  samps <- sample(unique(chain$sampno), nsamp)
+  res <- matrix(nrow=nsamp, ncol=xmax+1)
+  
+  for(i in seq_along(samps)){
+    pars <- get_index_par(chain, samps[i])
+    res[i,] <- dgamma(0:xmax, shape=pars["shape"],scale=pars["scale"])
+  }
+  quants <- t(apply(res, 2, function(x) quantile(x,c(0.025,0.5,0.975))))
+  quants <- data.frame(quants)
+  colnames(quants) <- c("lower","median","upper")
+  quants$day <- 0:xmax
+  p <- ggplot(quants) + geom_ribbon(aes(x=day,ymin=lower,ymax=upper),alpha=0.25) + geom_line(aes(x=day,y=median)) +
+    theme_bw()
+  return(p)
+}
+
+#' @export
+plot_incubation_period <- function(chain, nsamp=100,xmax=40,prior_pars=NULL){
+  samps <- sample(unique(chain$sampno), nsamp)
+  res <- matrix(nrow=nsamp, ncol=xmax+1)
+  prior_res <- matrix(nrow=nsamp, ncol=xmax+1)
+  
+  if(!is.null(prior_pars)){
+    samp_prior <- sample(1:nrow(prior_pars), nsamp)
+  }
+  
+  for(i in seq_along(samps)){
+    pars <- get_index_par(chain, samps[i])
+    res[i,] <- dweibull(0:xmax, shape=pars["weibull_alpha"],scale=pars["weibull_sigma"])
+    
+    if(!is.null(prior_pars)){
+    prior_alpha <- prior_pars$alpha[samp_prior[i]]
+    prior_sigma <- prior_pars$sigma[samp_prior[i]]
+    
+    prior_res[i,] <- dweibull(0:xmax, shape=prior_alpha, scale=prior_sigma)
+    }
+    }
+  quants <- t(apply(res, 2, function(x) quantile(x,c(0.025,0.5,0.975))))
+  quants <- data.frame(quants)
+  colnames(quants) <- c("lower","median","upper")
+  quants$day <- 0:xmax
+  quants$var <- "Posterior"
+  if(!is.null(prior_pars)){
+    quants_prior <- t(apply(prior_res, 2, function(x) quantile(x,c(0.025,0.5,0.975))))
+    quants_prior <- data.frame(quants_prior)
+    colnames(quants_prior) <- c("lower","median","upper")
+    quants_prior$day <- 0:xmax
+    quants_prior$var <- "Prior"
+    quants <- bind_rows(quants, quants_prior)
+  }
+  
+  p <- ggplot(quants) + 
+    geom_ribbon(aes(x=day,ymin=lower,ymax=upper, fill=var),alpha=0.25) + 
+    geom_line(aes(x=day,y=median,col=var)) +
+    theme_bw() +
+    theme(legend.position=c(0.8,0.8))
+  return(p)
+}
+

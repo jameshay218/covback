@@ -39,6 +39,10 @@ create_model_func_provinces <- function(parTab, data=NULL, PRIOR_FUNC=NULL,
     for (i in 1:n_provinces){
         arrival_matrices[[i]] <- prob_daily_arrival(daily_export_probs, daily_import_probs[i,], tmax)
     }
+
+    if(!is.null(confirm_delay_pars)){
+        report_delay_mat <- calculate_reporting_delay_matrix(confirm_delay_pars$shape, confirm_delay_pars$scale)
+    }
     
      model_func <- function(pars_all) {
         names(pars_all) <- par_names
@@ -52,11 +56,8 @@ create_model_func_provinces <- function(parTab, data=NULL, PRIOR_FUNC=NULL,
         ## estimates
         ## Move into model func call if need to estimate these...
         if (is.null(confirm_delay_pars)) {
-            gamma_shape <- shape
-            gamma_scale <- scale
-            confirm_delay_pars <- tibble(date_onset=0:tmax, shape=gamma_shape, scale=gamma_scale)
+            report_delay_mat <- calculate_reporting_delay_matrix_constant(shape,scale,tmax)
         }
-        report_delay_mat <- calculate_reporting_delay_matrix(confirm_delay_pars$shape, confirm_delay_pars$scale)
         
         ## Negative binomial size
         size <- pars_all["size"]
@@ -64,6 +65,12 @@ create_model_func_provinces <- function(parTab, data=NULL, PRIOR_FUNC=NULL,
         ## Incubation period    
         weibull_alpha <- pars_all["weibull_alpha"]
         weibull_sigma <- pars_all["weibull_sigma"]
+
+        ## Serial interval
+        serial_lmean <- pars_all["lnorm_mean"]
+        serial_lsd <- pars_all["lnorm_sd"]
+
+        serial_probs <- calculate_serial_interval_probs(tmax, serial_lmean, serial_lsd)
         
         ## For each day with a potential infection onset, get the probability of leaving at some point in the future before
         ## symptom onset
@@ -115,7 +122,8 @@ create_model_func_provinces <- function(parTab, data=NULL, PRIOR_FUNC=NULL,
             #                                weibull_alpha, weibull_sigma, confirm_delay_pars$shape, confirm_delay_pars$scale,
                                         #                                tmax)
             ## Really preliminary playing
-            import_cases_local <- Hmisc::Lag(import_cases*pars["local_r"], pars_all["serial_interval"])
+            import_cases_local <- calculate_local_from_import_infections(import_cases*pars["local_r"], serial_probs, tmax)
+            ## import_cases_local <- Hmisc::Lag(import_cases*pars["local_r"], pars_all["serial_interval"])
             import_cases_local[is.na(import_cases_local)] <- 0
             import_cases <- import_cases + import_cases_local
             res <- calculate_all_incidences(growth_rate, t0, i0, import_cases,
@@ -153,7 +161,7 @@ create_model_func_provinces <- function(parTab, data=NULL, PRIOR_FUNC=NULL,
                 lik <- sum(dnbinom(x=cases,mu=all_confirmations,size=size,log=TRUE),na.rm=TRUE)
             }
             if (!is.null(PRIOR_FUNC)) {
-                lik <- lik + PRIOR_FUNC(pars)
+                lik <- lik + PRIOR_FUNC(pars_all)
             }
             #print(lik)
             return(lik)

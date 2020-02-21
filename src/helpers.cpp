@@ -24,6 +24,19 @@ NumericVector calculate_probs_presymptomatic(int tmax, double weibull_alpha, dou
 
 
 /////////////////////////////////////
+// LOCAL TRANSMISSION PROBABILITIES
+/////////////////////////////////////
+//[[Rcpp::export]]
+NumericVector calculate_serial_interval_probs(int tmax, double lnorm_mean, double lnorm_sd){
+  NumericVector probs(tmax+1);
+  for(int t = 0; t <= tmax; ++t){
+    probs[t] = R::plnorm(t+1, lnorm_mean, lnorm_sd, true, false) - R::plnorm(t, lnorm_mean, lnorm_sd, true, false);
+  }
+  return(probs);
+}
+
+
+/////////////////////////////////////
 // EXPORTATION PROBABILITIES
 /////////////////////////////////////
 //[[Rcpp::export]]

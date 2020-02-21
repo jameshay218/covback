@@ -32,6 +32,26 @@ NumericVector calculate_infection_incidence_time(double growth_rate, double grow
 
 
 //[[Rcpp::export]]
+NumericVector calculate_local_from_import_infections(NumericVector imported_infections, NumericVector serial_probs, int tmax){
+  NumericVector local(tmax+1);
+  NumericVector infections_subset;
+  IntegerVector seqs;
+  NumericVector probs;
+  
+  for(int t = 0; t <= tmax; ++t){
+    seqs = seq(0, t);
+    infections_subset = imported_infections[seqs];
+    probs = serial_probs[t-seqs];
+    probs = probs*infections_subset;
+
+    local[t] = sum(probs);
+  }
+  return(local);
+}
+
+
+
+//[[Rcpp::export]]
 NumericVector calculate_onset_incidence(NumericVector infections, NumericVector onset_probs, int tmax){
   NumericVector onsets(tmax+1);
   NumericVector infections_subset;
@@ -105,8 +125,15 @@ NumericVector calculate_confirmation_incidence(NumericVector onsets, int tmax,Nu
 List calculate_all_incidences(double growth_rate, double t0, double i0, NumericVector import_cases,
 			      NumericVector onset_probs, NumericMatrix report_delay_mat,
                               int tmax){
-  NumericVector infections = i0*daily_exp_interval_cpp(growth_rate, tmax, t0);
-  infections = infections + import_cases;
+  NumericVector infections;
+ 
+  if(i0 > 0){
+    infections = i0*daily_exp_interval_cpp(growth_rate, tmax, t0);
+    infections = infections + import_cases;
+  } else {
+    infections = import_cases;
+  }
+  
   NumericVector onsets = calculate_onset_incidence(infections, onset_probs, tmax);
   NumericVector confirmations = calculate_confirmation_incidence(onsets, tmax, report_delay_mat);
   

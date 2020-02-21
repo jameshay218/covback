@@ -7,7 +7,6 @@ library(grid)
 library(lazymcmc)
 library(tidyverse)
 library(ggpubr)
-library(patchwork)
 tmin <- as.POSIXct("19-11-01",format="%Y-%m-%d")
 tmax <- as.POSIXct("20-02-20",format="%Y-%m-%d")
 times <- seq(tmin, tmax, by="1 day")
@@ -31,9 +30,6 @@ ggplot(confirmed_data) + geom_line(aes(x=date,y=n)) + facet_wrap(~province,scale
 inc_period_draws <- read.csv("~/Documents/case_to_infection/data/backer_weibull_draws.csv",stringsAsFactors=FALSE)
 parTab <- read.csv("pars/partab_provinces.csv",stringsAsFactors=FALSE)
 
-## Serial interval draws
-serial_interval_draws <- read.csv("~/Documents/covback/data/lognormal-truncated.csv")
-wow <- fit_lnorm_normal_prior(serial_interval_draws)
 ## Real export probs
 export_probs <- read.csv("data/export_probs.csv")
 export_probs <- export_probs[1:112,]
@@ -63,7 +59,7 @@ n_provinces <- length(provinces)
 
 ## Make strong prior on alpha and sigma
 #prior_func <- create_incubation_prior(inc_period_draws)
-prior_func <- create_prior_startdate(parTab, inc_period_draws, 37, 5, serial_interval_draws)
+prior_func <- create_prior_startdate(parTab, inc_period_draws, 30, 8)
 ## Generate some fake data
 
 confirm_delay_pars <- read.csv("data/fitted_confirm_delays.csv")
@@ -73,41 +69,34 @@ confirm_delay_pars <- confirm_delay_pars %>% filter(date_onset <= tmax)
 plot_reporting_landscape(confirm_delay_pars$shape, confirm_delay_pars$scale)
 
 parTab[parTab$names == "t0" & parTab$province == "1","fixed"] <- 0
-parTab[parTab$names == "t0" & parTab$province == "1","values"] <- 37
-parTab[parTab$names == "growth_rate" & parTab$province == "1","values"] <- 0.25
 parTab[parTab$names == "growth_rate", "upper_bound"] <- 0.4
-parTab[parTab$names == "growth_rate" & parTab$province != "1","values"] <- 0
+parTab[parTab$names == "growth_rate" & parTab$province != "1","values"] <- 0.00000001
+parTab[parTab$names == "growth_rate" & parTab$province != "1","lower_bound"] <- -10
 parTab[parTab$names == "growth_rate" & parTab$province != "1","fixed"] <- 1
-parTab[parTab$names == "growth_rate" & parTab$province != "1","lower_bound"] <- 0
 parTab[parTab$names == "t0" & parTab$province != "1","values"] <- 0.00001
 parTab[parTab$names == "t0" & parTab$province != "1","fixed"] <- 1
 parTab[parTab$names == "t0" & parTab$province == "1",c("lower_bound","upper_bound")] <- c(0, 60)
 parTab[parTab$names == "t0" & parTab$province == "1",c("lower_start","upper_start")] <- c(31,40)
-parTab[parTab$names == "i0" & parTab$province != "1","values"] <- 0
-
+parTab[parTab$names == "local_r",c("fixed")] <- 1
+parTab[parTab$names == "local_r",c("values")] <- 1
 parTab[parTab$names %in% c("shape","scale"),"fixed"] <- 0
-parTab[parTab$names %in% c("shape","scale"),"values"] <- c(3,3)
-parTab[parTab$names %in% c("shape","scale"),"lower_start"] <- c(2.5,2.5)
-parTab[parTab$names %in% c("shape","scale"),"upper_start"] <- c(3.5,3.5)
-parTab[parTab$names %in% c("lnorm_mean","lnorm_sd"),"fixed"] <- 1
 confirm_delay_pars <- NULL
 
 ## Check that posterior works
-confirmed_data1 <- confirmed_data %>% mutate(n=ifelse(province=="1", NA, n))
-f <- create_model_func_provinces(parTab,confirmed_data1, confirm_delay_pars = confirm_delay_pars, 
+f <- create_model_func_provinces(parTab,confirmed_data, confirm_delay_pars = confirm_delay_pars, 
                                  daily_import_probs = import_probs, daily_export_probs = export_probs,
                                  PRIOR_FUNC=prior_func)
 f(parTab$values)
 
 ## Check that model works
-f <- create_model_func_provinces(parTab,confirmed_data1, confirm_delay_pars = confirm_delay_pars, 
+f <- create_model_func_provinces(parTab,confirmed_data, confirm_delay_pars = confirm_delay_pars, 
                                  daily_import_probs = import_probs, daily_export_probs = export_probs,
                                  PRIOR_FUNC=prior_func, ver="model")
 dat <- f(parTab$values)
 
 ggplot(dat) + geom_line(aes(x=date,y=n,col=var)) + facet_wrap(~province,scales="free_y")
 
-parTab[parTab$names == "t0" & parTab$province == "1","values"] <- 37
+parTab[parTab$names == "t0" & parTab$province == "1","values"] <- 0
 parTab[parTab$names == "t0" & parTab$province == "1","upper_bound"] <- 62
 startTab <- generate_start_tab(parTab)
 startTab[startTab$names %in% c("weibull_alpha","weibull_sigma"),"values"] <- c(2.5,6)
@@ -119,8 +108,9 @@ mcmcPars <- c("iterations"=50000,"popt"=0.44,"opt_freq"=1000,
               "thin"=10,"adaptive_period"=20000,"save_block"=100)
 #startTab[startTab$province=="all","fixed"] <- 1
 
+confirmed_data1 <- confirmed_data %>% mutate(n=ifelse(province=="1", NA, n))
 
-output <- run_MCMC(parTab=startTab, data=confirmed_data1, mcmcPars=mcmcPars, filename="chains/serial_interval",
+output <- run_MCMC(parTab=startTab, data=confirmed_data1, mcmcPars=mcmcPars, filename="chains/imports_only",
                    CREATE_POSTERIOR_FUNC=create_model_func_provinces, mvrPars=NULL,
                    PRIOR_FUNC = prior_func, OPT_TUNING=0.2,
                    confirm_delay_pars=confirm_delay_pars,
@@ -133,7 +123,7 @@ chain <- read.csv(output$file)
 best_pars <- get_best_pars(chain)
 chain <- chain[chain$sampno >= mcmcPars["adaptive_period"],2:(ncol(chain)-1)]
 covMat <- cov(chain)
-mvrPars <- list(covMat,0.5,w=0.8)
+mvrPars <- list(covMat,0.1,w=0.8)
 
 ## Start from best location of previous chain
 startTab$values <- best_pars
@@ -141,7 +131,7 @@ startTab$values <- best_pars
 ## Run second chain
 mcmcPars <- c("iterations"=50000,"popt"=0.234,"opt_freq"=1000,
               "thin"=10,"adaptive_period"=20000,"save_block"=100)
-output <- run_MCMC(parTab=startTab, data=confirmed_data1, mcmcPars=mcmcPars, filename="chains/start_prior",
+output <- run_MCMC(parTab=startTab, data=confirmed_data1, mcmcPars=mcmcPars, filename="chains/imports_only",
                    CREATE_POSTERIOR_FUNC=create_model_func_provinces, mvrPars=mvrPars,
                    PRIOR_FUNC = prior_func, OPT_TUNING=0.2,
                    confirm_delay_pars=confirm_delay_pars,

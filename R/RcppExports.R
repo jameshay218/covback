@@ -9,6 +9,10 @@ calculate_probs_presymptomatic <- function(tmax, weibull_alpha, weibull_sigma) {
     .Call('_covback_calculate_probs_presymptomatic', PACKAGE = 'covback', tmax, weibull_alpha, weibull_sigma)
 }
 
+calculate_serial_interval_probs <- function(tmax, lnorm_mean, lnorm_sd) {
+    .Call('_covback_calculate_serial_interval_probs', PACKAGE = 'covback', tmax, lnorm_mean, lnorm_sd)
+}
+
 prob_not_left_per_day <- function(probs) {
     .Call('_covback_prob_not_left_per_day', PACKAGE = 'covback', probs)
 }
@@ -44,6 +48,10 @@ daily_exp_interval_cpp <- function(growth, tmax, t0) {
 
 calculate_infection_incidence_time <- function(growth_rate, growth_rate_imports, tmax, t0, t0_import, i0, import_propns) {
     .Call('_covback_calculate_infection_incidence_time', PACKAGE = 'covback', growth_rate, growth_rate_imports, tmax, t0, t0_import, i0, import_propns)
+}
+
+calculate_local_from_import_infections <- function(imported_infections, serial_probs, tmax) {
+    .Call('_covback_calculate_local_from_import_infections', PACKAGE = 'covback', imported_infections, serial_probs, tmax)
 }
 
 calculate_onset_incidence <- function(infections, onset_probs, tmax) {
