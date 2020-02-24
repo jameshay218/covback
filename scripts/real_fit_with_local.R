@@ -1,4 +1,4 @@
-setwd("~/Documents/covback")
+setwd("~/Documents/GitHub/covback")
 Rcpp::compileAttributes()
 devtools::document()
 devtools::load_all()
@@ -28,11 +28,11 @@ confirmed_data$date <- confirmed_data$date - 1
 ggplot(confirmed_data) + geom_line(aes(x=date,y=n)) + facet_wrap(~province,scales="free_y")
 
 ## Incubation period draws and parameter values
-inc_period_draws <- read.csv("~/Documents/case_to_infection/data/backer_weibull_draws.csv",stringsAsFactors=FALSE)
+inc_period_draws <- read.csv("data/backer_weibull_draws.csv",stringsAsFactors=FALSE)
 parTab <- read.csv("pars/partab_provinces.csv",stringsAsFactors=FALSE)
 
 ## Serial interval draws
-serial_interval_draws <- read.csv("~/Documents/covback/data/lognormal-truncated.csv")
+serial_interval_draws <- read.csv("~/Documents/Github/covback/data/lognormal-truncated.csv")
 wow <- fit_lnorm_normal_prior(serial_interval_draws)
 ## Real export probs
 export_probs <- read.csv("data/export_probs.csv")
