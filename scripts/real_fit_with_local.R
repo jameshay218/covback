@@ -133,12 +133,12 @@ startTab[startTab$names %in% c("weibull_alpha","weibull_sigma"),"values"] <- c(2
 
 ## MCMC
 ## Run first chain
-mcmcPars <- c("iterations"=200000,"popt"=0.44,"opt_freq"=2000,
-              "thin"=10,"adaptive_period"=100000,"save_block"=1000)
+mcmcPars <- c("iterations"=20000,"popt"=0.44,"opt_freq"=2000,
+              "thin"=10,"adaptive_period"=10000,"save_block"=1000)
 #startTab[startTab$province=="all","fixed"] <- 1
 
 
-output <- run_MCMC(parTab=startTab, data=confirmed_data1, mcmcPars=mcmcPars, filename="chains/logistic",
+output <- run_MCMC(parTab=startTab, data=confirmed_data1, mcmcPars=mcmcPars, filename="logistic2",
                    CREATE_POSTERIOR_FUNC=create_model_func_provinces, mvrPars=NULL,
                    PRIOR_FUNC = prior_func, OPT_TUNING=0.2,
                    confirm_delay_pars=confirm_delay_pars,

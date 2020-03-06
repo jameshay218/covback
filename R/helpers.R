@@ -85,6 +85,7 @@ weibull_mode <- function(weibull_alpha, weibull_sigma){
 
 #' @export
 create_export_prob_matrix <- function(total_travellers, wuhan_pop_ini,
+                                      export_dat,
                                       date_start, date_end,
                                       index_date_start=as.POSIXct("2020-01-10", format="%Y-%m-%d",tz="UTC"), 
                                       index_date_end=as.POSIXct("2020-01-25", format="%Y-%m-%d",tz="UTC")){

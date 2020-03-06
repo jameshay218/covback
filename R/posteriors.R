@@ -84,11 +84,11 @@ create_model_func_provinces <- function(parTab, data=NULL, PRIOR_FUNC=NULL,
         daily_prob_leaving <- prob_leave_pre_symptoms_vector(leave_matrix, presymptom_probs)*pars_all["export_prob"]
         
         onset_probs <- calculate_onset_probs(tmax, weibull_alpha, weibull_sigma)
-
+        
 
         ## Get local growth of seed province. Will add/subtract this from later estimates
         if(model_ver == 1){
-          infections_seed <- i0*daily_exp_interval_cpp(pars_seed["growth_rate"], tmax, pars_seed["t0"])
+          infections_seed <- pars_seed["i0"]*daily_exp_interval_cpp(pars_seed["growth_rate"], tmax, pars_seed["t0"])
         } else {
           t_switch <- pars_all["t_switch"]
           if(weibull_alpha > 1) {
