@@ -3,22 +3,23 @@ Rcpp::compileAttributes()
 devtools::document()
 devtools::load_all()
 
+set.seed(1)
+
 library(grid)
 library(lazymcmc)
 library(tidyverse)
 library(ggpubr)
 library(patchwork)
-tmin <- as.POSIXct("19-11-01",format="%Y-%m-%d")
-tmax <- as.POSIXct("20-02-20",format="%Y-%m-%d")
+tmin <- as.POSIXct("2019-11-01",format="%Y-%m-%d", tz="UTC")
+tmax <- as.POSIXct("2020-03-03",format="%Y-%m-%d",tz="UTC")
 times <- seq(tmin, tmax, by="1 day")
+#confirmed_data$date <-as.POSIXct(as.character(confirmed_data$date))
+
 confirmed_data <- read_csv("data/confirmed_data.csv")
 confirmed_data <- confirmed_data %>% filter(country_region == "Mainland China")
-confirmed_data$date <-as.POSIXct(as.character(confirmed_data$date))
-
 confirmed_data$date <- match(confirmed_data$date, times)
 confirmed_data <- confirmed_data %>% select(province, date, diff)
 colnames(confirmed_data)[3] <- "n"
-
 all_reports <- expand.grid(province=unique(confirmed_data$province),
                            date=match(times, times))
 confirmed_data <- confirmed_data %>% right_join(all_reports)
@@ -28,21 +29,31 @@ confirmed_data$date <- confirmed_data$date - 1
 ggplot(confirmed_data) + geom_line(aes(x=date,y=n)) + facet_wrap(~province,scales="free_y")
 
 ## Incubation period draws and parameter values
-inc_period_draws <- read.csv("data/backer_weibull_draws.csv",stringsAsFactors=FALSE)
+inc_period_draws <- read.csv("data/backer_draws.csv",stringsAsFactors=FALSE)
+#inc_period_draws1 <- read.csv("data/backer_weibull_draws.csv")
 parTab <- read.csv("pars/partab_provinces.csv",stringsAsFactors=FALSE)
 
 ## Serial interval draws
-serial_interval_draws <- read.csv("~/Documents/Github/covback/data/lognormal-truncated.csv")
-wow <- fit_lnorm_normal_prior(serial_interval_draws)
+#serial_interval_draws <- read.csv("~/Documents/Github/covback/data/lognormal-truncated.csv")
+#wow <- fit_lnorm_normal_prior(serial_interval_draws)
+## Use estimated serial interval from http://rs.yiigle.com/yufabiao/1183269.htm
+## gamma with pars 5.23 and 0.87
+serial_interval_par1 <- 5.23
+serial_interval_par2 <- 0.87
+serial_interval <- dgamma(0:20,serial_interval_par1,serial_interval_par2)
+
+plot(calculate_serial_interval_probs(40, serial_interval_par1, serial_interval_par2),type='l')
+
+
 ## Real export probs
 export_probs <- read.csv("data/export_probs.csv")
-export_probs <- export_probs[1:112,]
+#export_probs <- export_probs[1:112,]
 tmax <- nrow(export_probs)-1
 export_probs <- export_probs$prob_leaving
 
 ## Real import probs
 import_probs <- read.csv("data/import_probs.csv",header = TRUE)
-import_probs <- import_probs[1:112,]
+#import_probs <- import_probs[1:112,]
 import_probs <- t(import_probs[,2:ncol(import_probs)])
 import_probs <- rbind(rep(1, ncol(import_probs)),import_probs)
 row.names(import_probs)[1] <- "Hubei"
@@ -63,7 +74,7 @@ n_provinces <- length(provinces)
 
 ## Make strong prior on alpha and sigma
 #prior_func <- create_incubation_prior(inc_period_draws)
-prior_func <- create_prior_startdate(parTab, inc_period_draws, 37, 5, serial_interval_draws)
+prior_func <- create_prior_startdate(parTab, inc_period_draws, 37, 5)
 ## Generate some fake data
 
 confirm_delay_pars <- read.csv("data/fitted_confirm_delays.csv")
@@ -72,10 +83,10 @@ confirm_delay_pars$date_onset <- 0:(nrow(confirm_delay_pars)-1)
 confirm_delay_pars <- confirm_delay_pars %>% filter(date_onset <= tmax)
 plot_reporting_landscape(confirm_delay_pars$shape, confirm_delay_pars$scale)
 
-parTab[parTab$names == "t0" & parTab$province == "1","fixed"] <- 0
+parTab[parTab$names == "t0" & parTab$province == "1","fixed"] <- 1
 parTab[parTab$names == "t0" & parTab$province == "1","values"] <- 37
 parTab[parTab$names == "growth_rate" & parTab$province == "1","values"] <- 0.25
-parTab[parTab$names == "growth_rate", "upper_bound"] <- 0.4
+parTab[parTab$names == "growth_rate", "upper_bound"] <- 0.5
 parTab[parTab$names == "growth_rate" & parTab$province != "1","values"] <- 0
 parTab[parTab$names == "growth_rate" & parTab$province != "1","fixed"] <- 1
 parTab[parTab$names == "growth_rate" & parTab$province != "1","lower_bound"] <- 0
@@ -90,6 +101,10 @@ parTab[parTab$names %in% c("shape","scale"),"values"] <- c(3,3)
 parTab[parTab$names %in% c("shape","scale"),"lower_start"] <- c(2.5,2.5)
 parTab[parTab$names %in% c("shape","scale"),"upper_start"] <- c(3.5,3.5)
 parTab[parTab$names %in% c("lnorm_mean","lnorm_sd"),"fixed"] <- 1
+
+parTab[parTab$names =="export_prob","fixed"] <- 1
+parTab[parTab$names =="export_prob","values"] <- 1
+
 confirm_delay_pars <- NULL
 
 ## Check that posterior works
@@ -102,30 +117,33 @@ f(parTab$values)
 ## Check that model works
 f <- create_model_func_provinces(parTab,confirmed_data1, confirm_delay_pars = confirm_delay_pars, 
                                  daily_import_probs = import_probs, daily_export_probs = export_probs,
-                                 PRIOR_FUNC=prior_func, ver="model")
-dat <- f(parTab$values)
+                                 PRIOR_FUNC=prior_func, ver="model",model_ver=2)
+pars <- parTab$values
+pars[which(parTab$names == "K")] <- 100000
+dat <- f(pars)
 
 ggplot(dat) + geom_line(aes(x=date,y=n,col=var)) + facet_wrap(~province,scales="free_y")
 
 parTab[parTab$names == "t0" & parTab$province == "1","values"] <- 37
 parTab[parTab$names == "t0" & parTab$province == "1","upper_bound"] <- 62
+parTab[parTab$names == "growth_rate" & parTab$province == "1","fixed"] <- 1
 startTab <- generate_start_tab(parTab)
 startTab[startTab$names %in% c("weibull_alpha","weibull_sigma"),"values"] <- c(2.5,6)
 #startTab[startTab$names %in% c("weibull_alpha","weibull_sigma"),"fixed"] <- 1
 
 ## MCMC
 ## Run first chain
-mcmcPars <- c("iterations"=50000,"popt"=0.44,"opt_freq"=1000,
-              "thin"=10,"adaptive_period"=20000,"save_block"=100)
+mcmcPars <- c("iterations"=200000,"popt"=0.44,"opt_freq"=2000,
+              "thin"=10,"adaptive_period"=100000,"save_block"=1000)
 #startTab[startTab$province=="all","fixed"] <- 1
 
 
-output <- run_MCMC(parTab=startTab, data=confirmed_data1, mcmcPars=mcmcPars, filename="chains/serial_interval",
+output <- run_MCMC(parTab=startTab, data=confirmed_data1, mcmcPars=mcmcPars, filename="chains/logistic",
                    CREATE_POSTERIOR_FUNC=create_model_func_provinces, mvrPars=NULL,
                    PRIOR_FUNC = prior_func, OPT_TUNING=0.2,
                    confirm_delay_pars=confirm_delay_pars,
                    daily_import_probs = import_probs, daily_export_probs = export_probs,
-                   ver="posterior")
+                   ver="posterior",model_ver=2)
 
 
 ## Use this as input to multivariate chain
@@ -139,9 +157,9 @@ mvrPars <- list(covMat,0.5,w=0.8)
 startTab$values <- best_pars
 
 ## Run second chain
-mcmcPars <- c("iterations"=50000,"popt"=0.234,"opt_freq"=1000,
-              "thin"=10,"adaptive_period"=20000,"save_block"=100)
-output <- run_MCMC(parTab=startTab, data=confirmed_data1, mcmcPars=mcmcPars, filename="chains/start_prior",
+mcmcPars <- c("iterations"=200000,"popt"=0.234,"opt_freq"=1000,
+              "thin"=10,"adaptive_period"=100000,"save_block"=1000)
+output <- run_MCMC(parTab=startTab, data=confirmed_data1, mcmcPars=mcmcPars, filename="chains/serial_interval",
                    CREATE_POSTERIOR_FUNC=create_model_func_provinces, mvrPars=mvrPars,
                    PRIOR_FUNC = prior_func, OPT_TUNING=0.2,
                    confirm_delay_pars=confirm_delay_pars,
@@ -152,13 +170,19 @@ output <- run_MCMC(parTab=startTab, data=confirmed_data1, mcmcPars=mcmcPars, fil
 ## Check convergence
 chain <- read.csv(output$file)
 pdf("tmp.pdf")
-plot(coda::as.mcmc(chain[,c("shape","scale","weibull_alpha","weibull_sigma","t0","growth_rate","lnlike")]))
+plot(coda::as.mcmc(chain[,c("shape","scale","weibull_alpha","weibull_sigma","t0","growth_rate","export_prob","lnlike")]))
 dev.off()
 
 chain <- chain[chain$sampno > mcmcPars["adaptive_period"],]
 quants <- generate_prediction_intervals(chain, parTab, confirmed_data, confirm_delay_pars=confirm_delay_pars,
                                         daily_import_probs = import_probs, daily_export_probs = export_probs,
-                                        nsamp=100)
+                                        nsamp=100,return_draws = FALSE,model_ver=2)
+#samps <- quants$samp_ids
+#samps <- sort(samps)
+#chain_save <- chain[chain$sampno %in% samps,]
+#chain_save$sampno <- match(chain_save$sampno, samps)
+
+#quants <- quants$draws
 
 
 quants$province <- row.names(import_probs)[quants$province]
@@ -167,7 +191,11 @@ confirmed_data2 <- confirmed_data
 confirmed_data2$province <- row.names(import_probs)[confirmed_data2$province]
 confirmed_data2$date <- as.Date(confirmed_data2$date, origin="2019-11-01")
 quants$date <- as.Date(quants$date, origin="2019-11-01")
-hubei_plot <- ggplot(quants[quants$province == "Hubei" & quants$date <= "2020-01-25" & 
+
+#write_csv(quants, "incidence_estimates_20200305.csv")
+#write_csv(chain_save, "mcmc_chain_thinned.csv")
+
+hubei_plot <- ggplot(quants[quants$province == "Hubei" & #quants$date <= "2020-01-25" & 
                               quants$date >= "2019-12-01" &
                               quants$var %in% c("infections","confirmations","onsets"),]) + 
   geom_vline(xintercept=(as.Date("2020-01-23", format="%Y-%m-%d", tz="LMT", origin="2019-11-01")),linetype="dashed") +
@@ -236,12 +264,12 @@ colnames(tmp) <- unique(confirmed_data2$province)
 tmp1 <- reshape2::melt(tmp)
 import_probs_melt <- reshape2::melt(import_probs)
 import_probs_melt <- import_probs_melt %>% group_by(Var1) %>% summarise(val=mean(value)) %>% filter(Var1 != "Hubei") %>% ungroup()
-colnames(import_probs_melt) <- c("variable", "Average import probability")
+colnames(import_probs_melt) <- c("variable", "Mean import probability")
 tmp1 <- tmp1 %>% left_join(import_probs_melt)
 tmp_order <- tmp1 %>% group_by(variable) %>% summarise(x=mean(value)) %>% arrange(-x) %>% pull(variable)
 tmp1$variable <- factor(tmp1$variable, levels=factor_levels)
 local_r_plot <- ggplot(tmp1) + 
-  geom_violin(aes(x=variable, y=value, fill=`Average import probability`),
+  geom_violin(aes(x=variable, y=value, fill=`Mean import probability`),
               draw_quantiles=c(0.025,0.5,0.975),scale="width") + 
   scale_fill_gradient(low="blue",high="red") +
   geom_hline(yintercept=1,linetype="dashed") +

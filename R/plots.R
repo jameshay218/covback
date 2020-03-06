@@ -35,10 +35,12 @@ plot_model_fit <- function(chain, parTab, data, confirm_delay_pars=NULL,
 generate_prediction_intervals <- function(chain, parTab, data, confirm_delay_pars=NULL,
                                           daily_import_probs, daily_export_probs,
                                           nsamp=1000,
-                                          add_noise=TRUE, noise_ver="poisson"){
+                                          add_noise=TRUE, noise_ver="poisson",
+                                          return_draws=FALSE,
+                                          model_ver=1){
     model_func <- create_model_func_provinces(parTab, data, confirm_delay_pars=confirm_delay_pars,
                                               daily_import_probs = daily_import_probs, daily_export_probs = daily_export_probs,
-                                              ver="model")
+                                              ver="model",model_ver=model_ver)
     par_names <- parTab$names
     
     samps <- sample(unique(chain$sampno), nsamp)
@@ -47,9 +49,29 @@ generate_prediction_intervals <- function(chain, parTab, data, confirm_delay_par
     for(i in seq_along(samps)){
         pars <- get_index_par(chain, samps[i])
         names(pars) <- par_names
+        
+        prob_presymptomatic  <- calculate_probs_presymptomatic(100, pars["weibull_alpha"], pars["weibull_sigma"])
+        prob_preconfirmation  <- calculate_probs_preconfirmation(100, pars["shape"], pars["scale"])
+        
         res <- model_func(pars)
-        #infections <- res %>% filter(var == "infections") %>% pull(n)
-        #onsets <- res %>% filter(var == "onsets") %>% pull(n)
+        
+        infection_prevalence <- res %>% 
+          filter(var == "infections") %>% 
+          group_by(province) %>%
+          mutate(n = calculate_infection_prevalence(n, prob_presymptomatic),
+                 var = "infection_prev")
+        
+        onset_prevalence <- res %>% 
+          filter(var == "onsets") %>% 
+          group_by(province) %>%
+          mutate(n = calculate_infection_prevalence(n, prob_preconfirmation),
+                 var = "onset_prev")
+        
+        total_prev <- bind_rows(onset_prevalence, infection_prevalence) %>% 
+          group_by(province, date) %>%
+          summarise(n= sum(n)) %>%
+          mutate(var="total_prevalence")
+        
         #confirmations <- res %>% filter(var == "confirmations") %>% pull(n)
         if (add_noise) {
             subset_confirmations <- res %>% filter(var == "confirmations")
@@ -65,11 +87,13 @@ generate_prediction_intervals <- function(chain, parTab, data, confirm_delay_par
                 subset_confirmations <- subset_confirmations %>% mutate(var = "observations")
             }
         }
-        res <- bind_rows(res, subset_confirmations)
+        res <- bind_rows(res, subset_confirmations, infection_prevalence, onset_prevalence, total_prev)
         res$sampno <- i
         store_all <- bind_rows(store_all, res)
     }
-    
+    if(return_draws) {
+      return(list(draws=store_all,samp_ids=samps))
+    }
     quants <- store_all %>% group_by(province, date, var) %>%
         do(data.frame(t(c(quantile(.$n, probs = c(0.01,0.025,0.25,0.5,0.75,0.975,0.99),na.rm=TRUE),mean(.$n)))))
     colnames(quants) <- c("province","date","var",

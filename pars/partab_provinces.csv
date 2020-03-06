@@ -5,9 +5,14 @@ values,names,province,fixed,lower_bound,upper_bound,steps,lower_start,upper_star
 2.5,weibull_alpha,all,0,0,100,0.1,2,3
 6.5,weibull_sigma,all,0,0,100,0.1,6,7
 54,imports_stop,all,1,0,100,0.1,0,100
+1,export_prob,all,0,0,2,0.1,0,2
 4,serial_interval,all,1,0,10,0.1,0,10
 1.4,lnorm_mean,all,1,0,10,0.1,0,10
 0.466,lnorm_sd,all,1,0,10,0.1,0,10
+5.23,serial_interval_gamma_par1,all,1,0,10,0.1,0,10
+0.87,serial_interval_gamma_par2,all,1,0,10,0.1,0,10
+48,t_switch,all,1,0,100,0.1,0,100
+100000,K,all,0,60000,1000000,1,60000,1000000
 0.15,growth_rate,1,0,0,0.2,0.1,0.05,0.15
 1,i0,1,1,0,100,0.1,0,100
 0,t0,1,0,0,10,0.1,0,10

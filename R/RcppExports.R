@@ -9,8 +9,12 @@ calculate_probs_presymptomatic <- function(tmax, weibull_alpha, weibull_sigma) {
     .Call('_covback_calculate_probs_presymptomatic', PACKAGE = 'covback', tmax, weibull_alpha, weibull_sigma)
 }
 
-calculate_serial_interval_probs <- function(tmax, lnorm_mean, lnorm_sd) {
-    .Call('_covback_calculate_serial_interval_probs', PACKAGE = 'covback', tmax, lnorm_mean, lnorm_sd)
+calculate_probs_preconfirmation <- function(tmax, shape1, shape2) {
+    .Call('_covback_calculate_probs_preconfirmation', PACKAGE = 'covback', tmax, shape1, shape2)
+}
+
+calculate_serial_interval_probs <- function(tmax, par1, par2) {
+    .Call('_covback_calculate_serial_interval_probs', PACKAGE = 'covback', tmax, par1, par2)
 }
 
 prob_not_left_per_day <- function(probs) {
@@ -19,6 +23,10 @@ prob_not_left_per_day <- function(probs) {
 
 prob_leave_on_day <- function(probs, tmax) {
     .Call('_covback_prob_leave_on_day', PACKAGE = 'covback', probs, tmax)
+}
+
+probs_not_left_by_day <- function(probs, tmax) {
+    .Call('_covback_probs_not_left_by_day', PACKAGE = 'covback', probs, tmax)
 }
 
 prob_leave_pre_symptoms <- function(leave_matrix, presymptom_probs) {
@@ -39,6 +47,23 @@ prob_arrive_pre_symptoms <- function(arrive_matrix, presymptom_probs) {
 
 prob_arrive_pre_symptoms_vector <- function(arrive_matrix, presymptom_probs) {
     .Call('_covback_prob_arrive_pre_symptoms_vector', PACKAGE = 'covback', arrive_matrix, presymptom_probs)
+}
+
+calculate_infection_prevalence <- function(incidence, prob_presymptomatic) {
+    .Call('_covback_calculate_infection_prevalence', PACKAGE = 'covback', incidence, prob_presymptomatic)
+}
+
+calculate_infection_prevalence_hubei <- function(incidence, prob_presymptomatic, probs_not_left_by_day) {
+    .Call('_covback_calculate_infection_prevalence_hubei', PACKAGE = 'covback', incidence, prob_presymptomatic, probs_not_left_by_day)
+}
+
+calculate_symptomatic_prevalence <- function(onsets, prob_not_confirmed) {
+    .Call('_covback_calculate_symptomatic_prevalence', PACKAGE = 'covback', onsets, prob_not_confirmed)
+}
+
+#' @export
+daily_sigmoid_interval_cpp <- function(growth, i_max, tmax, t0) {
+    .Call('_covback_daily_sigmoid_interval_cpp', PACKAGE = 'covback', growth, i_max, tmax, t0)
 }
 
 #' @export
@@ -68,6 +93,10 @@ calculate_confirmation_incidence <- function(onsets, tmax, report_delay_mat) {
 
 calculate_all_incidences <- function(growth_rate, t0, i0, import_cases, onset_probs, report_delay_mat, tmax) {
     .Call('_covback_calculate_all_incidences', PACKAGE = 'covback', growth_rate, t0, i0, import_cases, onset_probs, report_delay_mat, tmax)
+}
+
+calculate_all_incidences_logistic <- function(growth_rate, t0, i0, K, import_cases, onset_probs, report_delay_mat, tmax) {
+    .Call('_covback_calculate_all_incidences_logistic', PACKAGE = 'covback', growth_rate, t0, i0, K, import_cases, onset_probs, report_delay_mat, tmax)
 }
 
 prob_not_symptomatic <- function(weibull_alpha, weibull_sigma, t) {

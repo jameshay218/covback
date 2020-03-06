@@ -31,16 +31,29 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// calculate_serial_interval_probs
-NumericVector calculate_serial_interval_probs(int tmax, double lnorm_mean, double lnorm_sd);
-RcppExport SEXP _covback_calculate_serial_interval_probs(SEXP tmaxSEXP, SEXP lnorm_meanSEXP, SEXP lnorm_sdSEXP) {
+// calculate_probs_preconfirmation
+NumericVector calculate_probs_preconfirmation(int tmax, double shape1, double shape2);
+RcppExport SEXP _covback_calculate_probs_preconfirmation(SEXP tmaxSEXP, SEXP shape1SEXP, SEXP shape2SEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< int >::type tmax(tmaxSEXP);
-    Rcpp::traits::input_parameter< double >::type lnorm_mean(lnorm_meanSEXP);
-    Rcpp::traits::input_parameter< double >::type lnorm_sd(lnorm_sdSEXP);
-    rcpp_result_gen = Rcpp::wrap(calculate_serial_interval_probs(tmax, lnorm_mean, lnorm_sd));
+    Rcpp::traits::input_parameter< double >::type shape1(shape1SEXP);
+    Rcpp::traits::input_parameter< double >::type shape2(shape2SEXP);
+    rcpp_result_gen = Rcpp::wrap(calculate_probs_preconfirmation(tmax, shape1, shape2));
+    return rcpp_result_gen;
+END_RCPP
+}
+// calculate_serial_interval_probs
+NumericVector calculate_serial_interval_probs(int tmax, double par1, double par2);
+RcppExport SEXP _covback_calculate_serial_interval_probs(SEXP tmaxSEXP, SEXP par1SEXP, SEXP par2SEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< int >::type tmax(tmaxSEXP);
+    Rcpp::traits::input_parameter< double >::type par1(par1SEXP);
+    Rcpp::traits::input_parameter< double >::type par2(par2SEXP);
+    rcpp_result_gen = Rcpp::wrap(calculate_serial_interval_probs(tmax, par1, par2));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -64,6 +77,18 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< NumericVector >::type probs(probsSEXP);
     Rcpp::traits::input_parameter< int >::type tmax(tmaxSEXP);
     rcpp_result_gen = Rcpp::wrap(prob_leave_on_day(probs, tmax));
+    return rcpp_result_gen;
+END_RCPP
+}
+// probs_not_left_by_day
+NumericMatrix probs_not_left_by_day(NumericVector probs, int tmax);
+RcppExport SEXP _covback_probs_not_left_by_day(SEXP probsSEXP, SEXP tmaxSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericVector >::type probs(probsSEXP);
+    Rcpp::traits::input_parameter< int >::type tmax(tmaxSEXP);
+    rcpp_result_gen = Rcpp::wrap(probs_not_left_by_day(probs, tmax));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -125,6 +150,57 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< NumericMatrix >::type arrive_matrix(arrive_matrixSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type presymptom_probs(presymptom_probsSEXP);
     rcpp_result_gen = Rcpp::wrap(prob_arrive_pre_symptoms_vector(arrive_matrix, presymptom_probs));
+    return rcpp_result_gen;
+END_RCPP
+}
+// calculate_infection_prevalence
+NumericVector calculate_infection_prevalence(NumericVector incidence, NumericVector prob_presymptomatic);
+RcppExport SEXP _covback_calculate_infection_prevalence(SEXP incidenceSEXP, SEXP prob_presymptomaticSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericVector >::type incidence(incidenceSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type prob_presymptomatic(prob_presymptomaticSEXP);
+    rcpp_result_gen = Rcpp::wrap(calculate_infection_prevalence(incidence, prob_presymptomatic));
+    return rcpp_result_gen;
+END_RCPP
+}
+// calculate_infection_prevalence_hubei
+NumericVector calculate_infection_prevalence_hubei(NumericVector incidence, NumericVector prob_presymptomatic, NumericMatrix probs_not_left_by_day);
+RcppExport SEXP _covback_calculate_infection_prevalence_hubei(SEXP incidenceSEXP, SEXP prob_presymptomaticSEXP, SEXP probs_not_left_by_daySEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericVector >::type incidence(incidenceSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type prob_presymptomatic(prob_presymptomaticSEXP);
+    Rcpp::traits::input_parameter< NumericMatrix >::type probs_not_left_by_day(probs_not_left_by_daySEXP);
+    rcpp_result_gen = Rcpp::wrap(calculate_infection_prevalence_hubei(incidence, prob_presymptomatic, probs_not_left_by_day));
+    return rcpp_result_gen;
+END_RCPP
+}
+// calculate_symptomatic_prevalence
+NumericVector calculate_symptomatic_prevalence(NumericVector onsets, NumericVector prob_not_confirmed);
+RcppExport SEXP _covback_calculate_symptomatic_prevalence(SEXP onsetsSEXP, SEXP prob_not_confirmedSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericVector >::type onsets(onsetsSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type prob_not_confirmed(prob_not_confirmedSEXP);
+    rcpp_result_gen = Rcpp::wrap(calculate_symptomatic_prevalence(onsets, prob_not_confirmed));
+    return rcpp_result_gen;
+END_RCPP
+}
+// daily_sigmoid_interval_cpp
+NumericVector daily_sigmoid_interval_cpp(double growth, double i_max, int tmax, double t0);
+RcppExport SEXP _covback_daily_sigmoid_interval_cpp(SEXP growthSEXP, SEXP i_maxSEXP, SEXP tmaxSEXP, SEXP t0SEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< double >::type growth(growthSEXP);
+    Rcpp::traits::input_parameter< double >::type i_max(i_maxSEXP);
+    Rcpp::traits::input_parameter< int >::type tmax(tmaxSEXP);
+    Rcpp::traits::input_parameter< double >::type t0(t0SEXP);
+    rcpp_result_gen = Rcpp::wrap(daily_sigmoid_interval_cpp(growth, i_max, tmax, t0));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -226,6 +302,24 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// calculate_all_incidences_logistic
+List calculate_all_incidences_logistic(double growth_rate, double t0, double i0, double K, NumericVector import_cases, NumericVector onset_probs, NumericMatrix report_delay_mat, int tmax);
+RcppExport SEXP _covback_calculate_all_incidences_logistic(SEXP growth_rateSEXP, SEXP t0SEXP, SEXP i0SEXP, SEXP KSEXP, SEXP import_casesSEXP, SEXP onset_probsSEXP, SEXP report_delay_matSEXP, SEXP tmaxSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< double >::type growth_rate(growth_rateSEXP);
+    Rcpp::traits::input_parameter< double >::type t0(t0SEXP);
+    Rcpp::traits::input_parameter< double >::type i0(i0SEXP);
+    Rcpp::traits::input_parameter< double >::type K(KSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type import_cases(import_casesSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type onset_probs(onset_probsSEXP);
+    Rcpp::traits::input_parameter< NumericMatrix >::type report_delay_mat(report_delay_matSEXP);
+    Rcpp::traits::input_parameter< int >::type tmax(tmaxSEXP);
+    rcpp_result_gen = Rcpp::wrap(calculate_all_incidences_logistic(growth_rate, t0, i0, K, import_cases, onset_probs, report_delay_mat, tmax));
+    return rcpp_result_gen;
+END_RCPP
+}
 // prob_not_symptomatic
 double prob_not_symptomatic(double weibull_alpha, double weibull_sigma, double t);
 RcppExport SEXP _covback_prob_not_symptomatic(SEXP weibull_alphaSEXP, SEXP weibull_sigmaSEXP, SEXP tSEXP) {
@@ -243,14 +337,20 @@ END_RCPP
 static const R_CallMethodDef CallEntries[] = {
     {"_covback_calculate_onset_probs", (DL_FUNC) &_covback_calculate_onset_probs, 3},
     {"_covback_calculate_probs_presymptomatic", (DL_FUNC) &_covback_calculate_probs_presymptomatic, 3},
+    {"_covback_calculate_probs_preconfirmation", (DL_FUNC) &_covback_calculate_probs_preconfirmation, 3},
     {"_covback_calculate_serial_interval_probs", (DL_FUNC) &_covback_calculate_serial_interval_probs, 3},
     {"_covback_prob_not_left_per_day", (DL_FUNC) &_covback_prob_not_left_per_day, 1},
     {"_covback_prob_leave_on_day", (DL_FUNC) &_covback_prob_leave_on_day, 2},
+    {"_covback_probs_not_left_by_day", (DL_FUNC) &_covback_probs_not_left_by_day, 2},
     {"_covback_prob_leave_pre_symptoms", (DL_FUNC) &_covback_prob_leave_pre_symptoms, 2},
     {"_covback_prob_leave_pre_symptoms_vector", (DL_FUNC) &_covback_prob_leave_pre_symptoms_vector, 2},
     {"_covback_prob_daily_arrival", (DL_FUNC) &_covback_prob_daily_arrival, 3},
     {"_covback_prob_arrive_pre_symptoms", (DL_FUNC) &_covback_prob_arrive_pre_symptoms, 2},
     {"_covback_prob_arrive_pre_symptoms_vector", (DL_FUNC) &_covback_prob_arrive_pre_symptoms_vector, 2},
+    {"_covback_calculate_infection_prevalence", (DL_FUNC) &_covback_calculate_infection_prevalence, 2},
+    {"_covback_calculate_infection_prevalence_hubei", (DL_FUNC) &_covback_calculate_infection_prevalence_hubei, 3},
+    {"_covback_calculate_symptomatic_prevalence", (DL_FUNC) &_covback_calculate_symptomatic_prevalence, 2},
+    {"_covback_daily_sigmoid_interval_cpp", (DL_FUNC) &_covback_daily_sigmoid_interval_cpp, 4},
     {"_covback_daily_exp_interval_cpp", (DL_FUNC) &_covback_daily_exp_interval_cpp, 3},
     {"_covback_calculate_infection_incidence_time", (DL_FUNC) &_covback_calculate_infection_incidence_time, 7},
     {"_covback_calculate_local_from_import_infections", (DL_FUNC) &_covback_calculate_local_from_import_infections, 3},
@@ -258,6 +358,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_covback_calculate_reporting_delay_matrix", (DL_FUNC) &_covback_calculate_reporting_delay_matrix, 2},
     {"_covback_calculate_confirmation_incidence", (DL_FUNC) &_covback_calculate_confirmation_incidence, 3},
     {"_covback_calculate_all_incidences", (DL_FUNC) &_covback_calculate_all_incidences, 7},
+    {"_covback_calculate_all_incidences_logistic", (DL_FUNC) &_covback_calculate_all_incidences_logistic, 8},
     {"_covback_prob_not_symptomatic", (DL_FUNC) &_covback_prob_not_symptomatic, 3},
     {NULL, NULL, 0}
 };

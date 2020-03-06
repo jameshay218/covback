@@ -77,3 +77,34 @@ calculate_reporting_delay_matrix_constant  <- function(shape, scale, tmax){
     }
     use
 }
+
+#' @export
+weibull_mode <- function(weibull_alpha, weibull_sigma){
+  weibull_sigma * ((weibull_alpha-1)/weibull_alpha) ^ (1/weibull_alpha)
+}
+
+#' @export
+create_export_prob_matrix <- function(total_travellers, wuhan_pop_ini,
+                                      date_start, date_end,
+                                      index_date_start=as.POSIXct("2020-01-10", format="%Y-%m-%d",tz="UTC"), 
+                                      index_date_end=as.POSIXct("2020-01-25", format="%Y-%m-%d",tz="UTC")){
+  times <- seq(date_start, date_end,by="1 day")
+  emigration_indices <- export_dat %>% filter(Date >= index_date_start & Date <= index_date_end) %>%
+    select(emigration) %>% summarise(total_indices=sum(emigration)) %>% pull(total_indices)
+  per_index <- total_travellers/emigration_indices
+  export_dat <- export_dat %>%
+    mutate(total_left=emigration*per_index,
+           total_arrived=immigration*per_index,
+           prop_export=total_left*frac_leave_hubei)
+  total_pop <- numeric(nrow(export_dat))
+  total_pop[1] <- wuhan_pop_ini
+  for(i in 2:nrow(export_dat)) {
+    total_pop[i] <- total_pop[i-1] + export_dat$total_arrived[i]- export_dat$total_left[i]
+  }
+  export_probs <- export_dat$prop_export/total_pop
+  
+  probs <- numeric(length(times))
+  probs[which(times < min(export_dat$Date))] <- export_probs[1]
+  probs[match(export_dat$Date, times)] <- export_probs
+  probs
+}

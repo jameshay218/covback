@@ -22,15 +22,25 @@ NumericVector calculate_probs_presymptomatic(int tmax, double weibull_alpha, dou
   return(probs);
 }
 
+//[[Rcpp::export]]
+NumericVector calculate_probs_preconfirmation(int tmax, double shape1, double shape2){
+  NumericVector probs(tmax + 1);
+  for(int t = 0; t <= tmax; ++t){
+    probs[t] = 1 - R::pgamma(t, shape1, shape2, true, false);
+  }
+  return(probs);
+}
+
 
 /////////////////////////////////////
 // LOCAL TRANSMISSION PROBABILITIES
 /////////////////////////////////////
 //[[Rcpp::export]]
-NumericVector calculate_serial_interval_probs(int tmax, double lnorm_mean, double lnorm_sd){
+NumericVector calculate_serial_interval_probs(int tmax, double par1, double par2){
   NumericVector probs(tmax+1);
   for(int t = 0; t <= tmax; ++t){
-    probs[t] = R::plnorm(t+1, lnorm_mean, lnorm_sd, true, false) - R::plnorm(t, lnorm_mean, lnorm_sd, true, false);
+//probs[t] = R::plnorm(t+1, lnorm_mean, lnorm_sd, true, false) - R::plnorm(t, lnorm_mean, lnorm_sd, true, false);
+    probs[t] = R::pgamma(t+1, par1, par2, true, false) - R::pgamma(t, par1, par2, true, false);
   }
   return(probs);
 }
@@ -76,6 +86,30 @@ NumericMatrix prob_leave_on_day(NumericVector probs, int tmax){
           tmp *= (1-probs[i]);
       }
       res(t,j) = tmp*probs[j];
+    }
+  }
+  return(res);
+}
+
+//[[Rcpp::export]]
+NumericMatrix probs_not_left_by_day(NumericVector probs, int tmax){
+  NumericMatrix res(tmax+1, tmax+1);
+  
+  double tmp = 1;
+  // For each day of potential onset
+  for(int t = 0; t <= tmax; ++t){
+    // Cannot have left before day 0
+    res(t,t) = 1;
+    
+    // Get prob that you haven't left by each day in the future
+    for(int j = t; j <= tmax; ++j){
+      tmp = 1;
+      // Is the probability that you haven't left on all previous days
+      // using probs from today onward
+      for(int i = t; i < j ; ++i){
+        tmp *= (1-probs[i]);
+      }
+      res(t,j) = tmp;
     }
   }
   return(res);
@@ -155,4 +189,41 @@ NumericMatrix prob_arrive_pre_symptoms(NumericMatrix arrive_matrix, NumericVecto
 NumericVector prob_arrive_pre_symptoms_vector(NumericMatrix arrive_matrix, NumericVector presymptom_probs){//double weibull_alpha, double weibull_sigma){
   NumericMatrix res = prob_arrive_pre_symptoms(arrive_matrix, presymptom_probs);//weibull_alpha, weibull_sigma);
   return(rowSums(res));
+}
+
+
+//[[Rcpp::export]]
+NumericVector calculate_infection_prevalence(NumericVector incidence, NumericVector prob_presymptomatic){
+  int tmax = incidence.size() - 1;
+  NumericVector prevalence(tmax+1);
+  for(int t = 0; t <= tmax; ++t){
+    for(int i = 0; i < t; ++i) {
+      prevalence[t] += incidence[i]*prob_presymptomatic[t-i];
+    }
+  }
+  return(prevalence);
+}
+
+//[[Rcpp::export]]
+NumericVector calculate_infection_prevalence_hubei(NumericVector incidence, NumericVector prob_presymptomatic, NumericMatrix probs_not_left_by_day){
+  int tmax = incidence.size() - 1;
+  NumericVector prevalence(tmax+1);
+  for(int t = 0; t <= tmax; ++t){
+    for(int i = 0; i < t; ++i) {
+      prevalence[t] += incidence[i]*prob_presymptomatic[t-i]*probs_not_left_by_day(i,t);
+    }
+  }
+  return(prevalence);
+}
+
+//[[Rcpp::export]]
+NumericVector calculate_symptomatic_prevalence(NumericVector onsets, NumericVector prob_not_confirmed){
+  int tmax = onsets.size() - 1;
+  NumericVector prevalence(tmax+1);
+  for(int t = 0; t <= tmax; ++t){
+    for(int i = 0; i < t; ++i) {
+      prevalence[t] += onsets[i]*prob_not_confirmed[t-i];
+    }
+  }
+  return(prevalence);
 }

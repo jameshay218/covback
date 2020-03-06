@@ -1,6 +1,27 @@
 #include <Rcpp.h>
 using namespace Rcpp;
 
+
+//' @export
+//[[Rcpp::export]]
+NumericVector daily_sigmoid_interval_cpp(double growth, double i_max, int tmax, double t0){
+  double t0_diff = t0 - floor(t0);
+  int t0_shift = floor(t0);
+  
+  NumericVector overall_y(tmax+1, 0.0);
+  
+  IntegerVector times_seed = seq(0, tmax-t0_shift);
+  NumericVector times_seed_use = as<NumericVector>(times_seed);
+  
+  NumericVector times_seed_upper = i_max/(1+(i_max-1)*Rcpp::exp((times_seed_use + 1.0 - t0_diff)*-growth));
+  NumericVector times_seed_lower = i_max/(1+(i_max-1)*Rcpp::exp((times_seed_use - t0_diff)*-growth));
+  
+  NumericVector y = (times_seed_upper - times_seed_lower);
+  times_seed = times_seed + t0_shift;
+  overall_y[times_seed] = y;
+  return(overall_y);
+}
+
 //' @export
 //[[Rcpp::export]]
 NumericVector daily_exp_interval_cpp(double growth, int tmax, double t0){
@@ -15,7 +36,8 @@ NumericVector daily_exp_interval_cpp(double growth, int tmax, double t0){
   NumericVector times_seed_upper = Rcpp::exp((times_seed_use + 1.0 - t0_diff)*growth);
   NumericVector times_seed_lower = Rcpp::exp((times_seed_use - t0_diff)*growth);
   
-  NumericVector y = (1.0/growth) * (times_seed_upper - times_seed_lower);
+  //NumericVector y = (1.0/growth) * (times_seed_upper - times_seed_lower);
+  NumericVector y = (times_seed_upper - times_seed_lower);
   times_seed = times_seed + t0_shift;
   overall_y[times_seed] = y;
   return(overall_y);
@@ -119,14 +141,12 @@ NumericVector calculate_confirmation_incidence(NumericVector onsets, int tmax,Nu
   }
   return(confirmations);
 }
-
-
 //[[Rcpp::export]]
 List calculate_all_incidences(double growth_rate, double t0, double i0, NumericVector import_cases,
-			      NumericVector onset_probs, NumericMatrix report_delay_mat,
+                              NumericVector onset_probs, NumericMatrix report_delay_mat,
                               int tmax){
   NumericVector infections;
- 
+  
   if(i0 > 0){
     infections = i0*daily_exp_interval_cpp(growth_rate, tmax, t0);
     infections = infections + import_cases;
@@ -140,6 +160,30 @@ List calculate_all_incidences(double growth_rate, double t0, double i0, NumericV
   List res = List::create(Named("infections")=infections,Named("onsets")=onsets,Named("confirmations")=confirmations);
   return(res);
 }
+
+
+//[[Rcpp::export]]
+List calculate_all_incidences_logistic(double growth_rate, double t0, double i0,
+                                       double K,
+                                       NumericVector import_cases,
+			      NumericVector onset_probs, NumericMatrix report_delay_mat,
+                              int tmax){
+  NumericVector infections;
+ 
+  if(i0 > 0){
+    infections = daily_sigmoid_interval_cpp(growth_rate, K, tmax, t0);
+    infections = infections + import_cases;
+  } else {
+    infections = import_cases;
+  }
+  
+  NumericVector onsets = calculate_onset_incidence(infections, onset_probs, tmax);
+  NumericVector confirmations = calculate_confirmation_incidence(onsets, tmax, report_delay_mat);
+  
+  List res = List::create(Named("infections")=infections,Named("onsets")=onsets,Named("confirmations")=confirmations);
+  return(res);
+}
+
 
 
 
