@@ -70,7 +70,7 @@ generate_prediction_intervals <- function(chain, parTab, data, confirm_delay_par
         total_prev <- bind_rows(onset_prevalence, infection_prevalence) %>% 
           group_by(province, date) %>%
           summarise(n= sum(n)) %>%
-          mutate(var="total_prevalence")
+          mutate(var="total_prevalence") %>% ungroup()
         
         #confirmations <- res %>% filter(var == "confirmations") %>% pull(n)
         if (add_noise) {

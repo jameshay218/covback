@@ -17,14 +17,15 @@ install.packages("~/Documents/GitHub/covback/",repos=NULL,type="source")
 library(covback)
 
 test_pars <- read.csv("data/test_pars.csv",stringsAsFactors=FALSE)
+test_pars <- test_pars %>% filter(total_travellers > 3000000 & !(model_ver == 1 & t0 != 37))
 
 #################################
 ## SETUP PARAMETERS FOR EVERYONE
 #################################
-mcmcPars1 <- c("iterations"=2000,"popt"=0.44,"opt_freq"=2000,
-              "thin"=1,"adaptive_period"=1000,"save_block"=1000)
-mcmcPars2 <- c("iterations"=2000,"popt"=0.234,"opt_freq"=1000,
-              "thin"=1,"adaptive_period"=1000,"save_block"=1000)
+mcmcPars1 <- c("iterations"=200000,"popt"=0.44,"opt_freq"=2000,
+              "thin"=10,"adaptive_period"=100000,"save_block"=1000)
+mcmcPars2 <- c("iterations"=200000,"popt"=0.234,"opt_freq"=1000,
+              "thin"=10,"adaptive_period"=100000,"save_block"=1000)
 
 ## Get times to solve over
 tmin <- as.POSIXct("2019-11-01",format="%Y-%m-%d", tz="UTC")
@@ -89,10 +90,18 @@ res <- foreach(i=1:nrow(test_pars),.packages=c("covback","lazymcmc","tidyverse")
   filename1 <- paste0("chain_start",t0,"_ver",model_ver,"_local",local_growth,"_travellers",total_travellers,"_chain",chain_no)
   parTab[parTab$names == "t0" & parTab$province == 1,"values"] <- t0
   
+  if(model_ver == 1){
+    parTab[parTab$names == "K","fixed"] <- 1
+    parTab[parTab$names == "growth_rate" & parTab$province == "1","fixed"] <- 0
+  } else {
+    parTab[parTab$names == "K","fixed"] <- 0
+    parTab[parTab$names == "growth_rate" & parTab$province == "1","fixed"] <- 1
+  }
+  
   ## Make strong prior on alpha and sigma
   prior_func <- create_prior_startdate(parTab, inc_period_draws, t0, 5)
   startTab <- generate_start_tab(parTab)
-  startTab[startTab$names %in% c("weibull_alpha","weibull_sigma"),"values"] <- c(2.5,6)
+  startTab[startTab$names %in% c("weibull_alpha","weibull_sigma"),"values"] <- c(3,7.3)
   
   if(!local_growth) {
     startTab[startTab$names == "local_r","values"] <- 0
@@ -109,7 +118,7 @@ res <- foreach(i=1:nrow(test_pars),.packages=c("covback","lazymcmc","tidyverse")
                      PRIOR_FUNC = prior_func, OPT_TUNING=0.2,
                      confirm_delay_pars=NULL,
                      daily_import_probs = import_probs, daily_export_probs = export_probs,
-                     ver="posterior",model_ver=model_ver)
+                     ver="posterior",model_ver=model_ver,solve_prior=FALSE)
   
   ## Use this as input to multivariate chain
   chain <- read.csv(output_univariate$file)

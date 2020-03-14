@@ -1,19 +1,18 @@
-setwd("~/Documents/GitHub/covback")
-Rcpp::compileAttributes()
-devtools::document()
-devtools::load_all()
-
-set.seed(1)
-
 library(grid)
 library(lazymcmc)
 library(tidyverse)
 library(ggpubr)
 library(patchwork)
+
+setwd("~/Documents/GitHub/covback")
+Rcpp::compileAttributes()
+devtools::document()
+devtools::load_all()
+#set.seed(2)
+
 tmin <- as.POSIXct("2019-11-01",format="%Y-%m-%d", tz="UTC")
 tmax <- as.POSIXct("2020-03-03",format="%Y-%m-%d",tz="UTC")
 times <- seq(tmin, tmax, by="1 day")
-#confirmed_data$date <-as.POSIXct(as.character(confirmed_data$date))
 
 confirmed_data <- read_csv("data/confirmed_data.csv")
 confirmed_data <- confirmed_data %>% filter(country_region == "Mainland China")
@@ -26,11 +25,12 @@ confirmed_data <- confirmed_data %>% right_join(all_reports)
 confirmed_data$date <- confirmed_data$date - 1
 #confirmed_data <- confirmed_data %>% filter(date <= 80)
 
-ggplot(confirmed_data) + geom_line(aes(x=date,y=n)) + facet_wrap(~province,scales="free_y")
+confirmed_data %>% #filter((province != "Hubei") | (province == "Hubei" & date <= 86)) %>%
+ggplot() + geom_line(aes(x=date,y=n)) + facet_wrap(~province,scales="free_y")
 
 ## Incubation period draws and parameter values
 inc_period_draws <- read.csv("data/backer_draws.csv",stringsAsFactors=FALSE)
-#inc_period_draws1 <- read.csv("data/backer_weibull_draws.csv")
+inc_period_draws1 <- read.csv("data/backer_weibull_draws.csv")
 parTab <- read.csv("pars/partab_provinces.csv",stringsAsFactors=FALSE)
 
 ## Serial interval draws
@@ -48,7 +48,7 @@ plot(calculate_serial_interval_probs(40, serial_interval_par1, serial_interval_p
 ## Real export probs
 export_probs <- read.csv("data/export_probs.csv")
 #export_probs <- export_probs[1:112,]
-tmax <- nrow(export_probs)-1
+#tmax <- nrow(export_probs)-1
 export_probs <- export_probs$prob_leaving
 
 ## Real import probs
@@ -136,7 +136,7 @@ startTab[startTab$names %in% c("weibull_alpha","weibull_sigma"),"values"] <- c(2
 mcmcPars <- c("iterations"=20000,"popt"=0.44,"opt_freq"=2000,
               "thin"=10,"adaptive_period"=10000,"save_block"=1000)
 #startTab[startTab$province=="all","fixed"] <- 1
-
+startTab[startTab$names == "weibull_alpha","lower_bound"] <- 1.5
 
 output <- run_MCMC(parTab=startTab, data=confirmed_data1, mcmcPars=mcmcPars, filename="logistic2",
                    CREATE_POSTERIOR_FUNC=create_model_func_provinces, mvrPars=NULL,
@@ -170,7 +170,7 @@ output <- run_MCMC(parTab=startTab, data=confirmed_data1, mcmcPars=mcmcPars, fil
 ## Check convergence
 chain <- read.csv(output$file)
 pdf("tmp.pdf")
-plot(coda::as.mcmc(chain[,c("shape","scale","weibull_alpha","weibull_sigma","t0","growth_rate","export_prob","lnlike")]))
+plot(coda::as.mcmc(chain[,c("shape","scale","weibull_alpha","weibull_sigma","t0","growth_rate","K","lnlike")]))
 dev.off()
 
 chain <- chain[chain$sampno > mcmcPars["adaptive_period"],]
@@ -179,11 +179,10 @@ quants <- generate_prediction_intervals(chain, parTab, confirmed_data, confirm_d
                                         nsamp=100,return_draws = FALSE,model_ver=2)
 #samps <- quants$samp_ids
 #samps <- sort(samps)
-#chain_save <- chain[chain$sampno %in% samps,]
-#chain_save$sampno <- match(chain_save$sampno, samps)
+chain_save <- chain[chain$sampno %in% samps,]
+chain_save$sampno <- match(chain_save$sampno, samps)
 
 #quants <- quants$draws
-
 
 quants$province <- row.names(import_probs)[quants$province]
 confirmed_data2 <- confirmed_data
@@ -192,18 +191,21 @@ confirmed_data2$province <- row.names(import_probs)[confirmed_data2$province]
 confirmed_data2$date <- as.Date(confirmed_data2$date, origin="2019-11-01")
 quants$date <- as.Date(quants$date, origin="2019-11-01")
 
-#write_csv(quants, "incidence_estimates_20200305.csv")
-#write_csv(chain_save, "mcmc_chain_thinned.csv")
+#quants %>% filter(var %in% c("total_prevalence","infection_prev","onset_prev") & sampno == 1) %>% ggplot() +
+#  geom_line(aes(x=date,y=n,col=var)) + facet_wrap(~province,scales="free_y")
+#write_csv(quants, "prevalence_estimates_summary_logistic_growth.csv")
+#write_csv(quants, "prevalence_estimates_logistic_growth.csv")
+#write_csv(chain_save, "mcmc_chain_thinned_logistic_growth.csv")
 
 hubei_plot <- ggplot(quants[quants$province == "Hubei" & #quants$date <= "2020-01-25" & 
                               quants$date >= "2019-12-01" &
-                              quants$var %in% c("infections","confirmations","onsets"),]) + 
+                              quants$var %in% c("confirmations","onsets","total_prevalence"),]) + 
   geom_vline(xintercept=(as.Date("2020-01-23", format="%Y-%m-%d", tz="LMT", origin="2019-11-01")),linetype="dashed") +
   geom_line(aes(x=date,y=median,col=var)) + 
   geom_ribbon(aes(x=date,ymin=lower,ymax=upper,fill=var),alpha=0.25) +
   scale_x_date(breaks="2 days") +
   theme_bw() +
-  ylab("Daily incidence") +
+  ylab("Daily prevalence") +
   xlab("Date") +
   theme(axis.text.x=element_text(angle=45,hjust=1),
         legend.position=c(0.2,0.2),
@@ -211,7 +213,7 @@ hubei_plot <- ggplot(quants[quants$province == "Hubei" & #quants$date <= "2020-0
 
 hubei_plot_inset <- ggplot(quants[quants$province == "Hubei" & quants$date <= "2020-01-01" & 
                                     quants$date >= "2019-12-01" &
-                                    quants$var %in% c("infections","confirmations","onsets"),]) + 
+                                    quants$var %in% c("confirmations","onsets"),]) + 
   geom_line(aes(x=date,y=median,col=var)) + 
   geom_ribbon(aes(x=date,ymin=lower,ymax=upper,fill=var),alpha=0.25) +
   scale_x_date(breaks="2 days") +

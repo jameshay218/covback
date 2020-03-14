@@ -1,4 +1,9 @@
 #' @export
+convert_date_to_integer <- function(date, times){
+  which(times == as.POSIXct(date,format="%Y-%m-%d",tz="UTC"))
+}
+
+#' @export
 get_index_par <- function(chain, index){
     par_names <- colnames(chain)[2:(ncol(chain)-1)]
     par <- as.numeric(chain[chain$sampno == index, 2:(ncol(chain)-1)])

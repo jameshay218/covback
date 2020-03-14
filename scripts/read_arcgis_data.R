@@ -21,6 +21,9 @@ confirmed <- confirmed %>%
 ## Remove Shandong after 20th Feb as big spike
 confirmed <- confirmed %>% mutate(diff = ifelse(province == "Shandong" & date > "2020-02-20",NA, diff))
 
+## First day is just starting confirmed case number
+#confirmed <- confirmed %>% mutate(diff=ifelse(is.na(diff), n, diff))
+#confirmed <- confirmed %>% mutate(diff=ifelse(diff < 0, 0, diff))
 write_csv(confirmed,"~/Documents/GitHub/covback/data/confirmed_data.csv")
 
 ## The 13th is when the mega new cases came out
