@@ -1,6 +1,6 @@
 #' @export
 create_model_func_provinces <- function(parTab, data=NULL, PRIOR_FUNC=NULL,
-                                        tmax=NULL, confirm_delay_pars=NULL,
+                                        tmax=NULL, time_varying_confirm_delay_pars=NULL,
                                         daily_import_probs=NULL, daily_export_probs=NULL,
                                         ver="posterior", noise_ver="poisson",
                                         model_ver=1, solve_prior=FALSE){
@@ -34,16 +34,19 @@ create_model_func_provinces <- function(parTab, data=NULL, PRIOR_FUNC=NULL,
     }
 
     ## Exportation and importation probabilities
-    leave_matrix <- prob_leave_on_day(daily_export_probs, tmax)
-    ## For each province, what's the daily probability of receiving a person from the seed province?
-    arrival_matrices <- NULL
-    ## First province isn't meaningful
-    for (i in 1:n_provinces){
+    if(n_provinces > 1) {
+      leave_matrix <- prob_leave_on_day(daily_export_probs, tmax)
+      ## For each province, what's the daily probability of receiving a person from the seed province?
+      arrival_matrices <- NULL
+      ## First province isn't meaningful
+      for (i in 1:n_provinces){
         arrival_matrices[[i]] <- prob_daily_arrival(daily_export_probs, daily_import_probs[i,], tmax)
+      }
     }
 
-    if(!is.null(confirm_delay_pars)){
-        report_delay_mat <- calculate_reporting_delay_matrix(confirm_delay_pars$shape, confirm_delay_pars$scale)
+
+    if(!is.null(time_varying_confirm_delay_pars)){
+        report_delay_mat <- calculate_reporting_delay_matrix(time_varying_confirm_delay_pars$shape, time_varying_confirm_delay_pars$scale)
     }
     
      model_func <- function(pars_all) {
@@ -58,7 +61,7 @@ create_model_func_provinces <- function(parTab, data=NULL, PRIOR_FUNC=NULL,
           ## If time-varying parameters not specified, enumerate out the point
           ## estimates
           ## Move into model func call if need to estimate these...
-          if (is.null(confirm_delay_pars)) {
+          if (is.null(time_varying_confirm_delay_pars)) {
               report_delay_mat <- calculate_reporting_delay_matrix_constant(shape,scale,tmax)
           }
           
@@ -82,7 +85,12 @@ create_model_func_provinces <- function(parTab, data=NULL, PRIOR_FUNC=NULL,
           ## symptom onset
           ## daily_prob_leaving <- prob_left_pre_sympt(pars_seed["export_prob"], weibull_alpha, weibull_sigma, 100)
           presymptom_probs <- calculate_probs_presymptomatic(tmax, weibull_alpha, weibull_sigma)
-          daily_prob_leaving <- prob_leave_pre_symptoms_vector(leave_matrix, presymptom_probs)*pars_all["export_prob"]
+          
+          if(n_provinces > 1) {
+            daily_prob_leaving <- prob_leave_pre_symptoms_vector(leave_matrix, presymptom_probs)
+          } else {
+            daily_prob_leaving <- numeric(tmax + 1)
+          }
           
           onset_probs <- calculate_onset_probs(tmax, weibull_alpha, weibull_sigma)
           
@@ -122,7 +130,7 @@ create_model_func_provinces <- function(parTab, data=NULL, PRIOR_FUNC=NULL,
                   t0 <- pars_seed["t0"]
               } else {
                   ## Otherwise, cases that come from seed province
-                  daily_prob_arrival <- prob_arrive_pre_symptoms_vector(arrival_matrices[[index]], presymptom_probs)*pars_all["export_prob"]
+                  daily_prob_arrival <- prob_arrive_pre_symptoms_vector(arrival_matrices[[index]], presymptom_probs)
                   import_cases <- daily_prob_arrival * infections_seed
   
                   ## t0 is days since t0 in seed province
@@ -184,7 +192,7 @@ create_model_func_provinces <- function(parTab, data=NULL, PRIOR_FUNC=NULL,
               if (!is.null(PRIOR_FUNC)) {
                   lik <- lik + PRIOR_FUNC(pars_all)
               }
-              #print(lik)
+              # print(lik)
               return(lik)
           }
         } else {
