@@ -54,12 +54,18 @@ generate_prediction_intervals <- function(chain, parTab, data, time_varying_conf
         prob_preconfirmation  <- calculate_probs_preconfirmation(100, pars["shape"], pars["scale"])
         
         res <- model_func(pars)
- 
+
         infection_prevalence <- res %>% 
           filter(var == "infections") %>% 
           group_by(province) %>%
           mutate(n = calculate_infection_prevalence(n, prob_presymptomatic),
                  var = "infection_prev")
+        
+        symptomatic_prevalence <- res %>% 
+          filter(var == "infections") %>% 
+          group_by(province) %>%
+          mutate(n = calculate_infection_prevalence(n, 1-prob_presymptomatic),
+                 var = "symptomatic_prevalence")
         
         onset_prevalence <- res %>% 
           filter(var == "onsets") %>% 
@@ -87,7 +93,7 @@ generate_prediction_intervals <- function(chain, parTab, data, time_varying_conf
                 subset_confirmations <- subset_confirmations %>% mutate(var = "observations")
             }
         }
-        res <- bind_rows(res, subset_confirmations, infection_prevalence, onset_prevalence, total_prev)
+        res <- bind_rows(res, subset_confirmations, infection_prevalence, onset_prevalence, total_prev, symptomatic_prevalence)
         res$sampno <- i
         store_all <- bind_rows(store_all, res)
     }

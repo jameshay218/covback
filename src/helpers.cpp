@@ -197,7 +197,7 @@ NumericVector calculate_infection_prevalence(NumericVector incidence, NumericVec
   int tmax = incidence.size() - 1;
   NumericVector prevalence(tmax+1);
   for(int t = 0; t <= tmax; ++t){
-    for(int i = 0; i < t; ++i) {
+    for(int i = 0; i <= t; ++i) {
       prevalence[t] += incidence[i]*prob_presymptomatic[t-i];
     }
   }
@@ -209,7 +209,7 @@ NumericVector calculate_infection_prevalence_hubei(NumericVector incidence, Nume
   int tmax = incidence.size() - 1;
   NumericVector prevalence(tmax+1);
   for(int t = 0; t <= tmax; ++t){
-    for(int i = 0; i < t; ++i) {
+    for(int i = 0; i <= t; ++i) {
       prevalence[t] += incidence[i]*prob_presymptomatic[t-i]*probs_not_left_by_day(i,t);
     }
   }
@@ -221,7 +221,7 @@ NumericVector calculate_symptomatic_prevalence(NumericVector onsets, NumericVect
   int tmax = onsets.size() - 1;
   NumericVector prevalence(tmax+1);
   for(int t = 0; t <= tmax; ++t){
-    for(int i = 0; i < t; ++i) {
+    for(int i = 0; i <= t; ++i) {
       prevalence[t] += onsets[i]*prob_not_confirmed[t-i];
     }
   }
