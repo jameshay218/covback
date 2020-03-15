@@ -74,7 +74,7 @@ create_model_func_provinces <- function(parTab, data=NULL, PRIOR_FUNC=NULL,
           #serial_lmean <- pars_all["lnorm_mean"]
           #serial_lsd <- pars_all["lnorm_sd"]
           serial_interval_par1 <- pars_all["serial_interval_gamma_par1"]
-          serial_interval_par2 <- pars_all["serial_interval_gamma_par2"]
+          serial_interval_par2 <- 1/pars_all["serial_interval_gamma_par2"]
   
           serial_probs <- calculate_serial_interval_probs(tmax, serial_interval_par1, serial_interval_par2)
           
