@@ -32,17 +32,17 @@ plot_model_fit <- function(chain, parTab, data, confirm_delay_pars=NULL,
 }
 
 #' @export
-generate_prediction_intervals <- function(chain, parTab, data, confirm_delay_pars=NULL,
+generate_prediction_intervals <- function(chain, parTab, data, time_varying_confirm_delay_pars=NULL,
                                           daily_import_probs, daily_export_probs,
                                           nsamp=1000,
                                           add_noise=TRUE, noise_ver="poisson",
                                           return_draws=FALSE,
                                           model_ver=1){
-    model_func <- create_model_func_provinces(parTab, data, confirm_delay_pars=confirm_delay_pars,
+    model_func <- create_model_func_provinces(parTab, data, time_varying_confirm_delay_pars=time_varying_confirm_delay_pars,
                                               daily_import_probs = daily_import_probs, daily_export_probs = daily_export_probs,
                                               ver="model",model_ver=model_ver)
     par_names <- parTab$names
-    
+
     samps <- sample(unique(chain$sampno), nsamp)
     
     store_all <- NULL
@@ -54,7 +54,7 @@ generate_prediction_intervals <- function(chain, parTab, data, confirm_delay_par
         prob_preconfirmation  <- calculate_probs_preconfirmation(100, pars["shape"], pars["scale"])
         
         res <- model_func(pars)
-        
+ 
         infection_prevalence <- res %>% 
           filter(var == "infections") %>% 
           group_by(province) %>%
@@ -71,7 +71,7 @@ generate_prediction_intervals <- function(chain, parTab, data, confirm_delay_par
           group_by(province, date) %>%
           summarise(n= sum(n)) %>%
           mutate(var="total_prevalence") %>% ungroup()
-        
+
         #confirmations <- res %>% filter(var == "confirmations") %>% pull(n)
         if (add_noise) {
             subset_confirmations <- res %>% filter(var == "confirmations")
