@@ -93,8 +93,8 @@ NumericVector calculate_onset_incidence(NumericVector infections, NumericVector 
 
 //[[Rcpp::export]]
 NumericMatrix calculate_reporting_delay_matrix(NumericVector shapes, NumericVector scales){
-  double shape1;
-  double scale1;
+  double alpha;
+  double scale;
   int tmax = shapes.size();
   NumericMatrix probs(tmax, tmax);
   double tmp;
@@ -103,11 +103,11 @@ NumericMatrix calculate_reporting_delay_matrix(NumericVector shapes, NumericVect
     // Going back in time from now to 0
     for(int j = 0; j <= t; ++j){
       // Use the reporting delay distribution as of time j
-      shape1 = shapes[j];
-      scale1 = scales[j];
+      alpha = shapes[j];
+      scale = scales[j];
       
       // Probability of reporting between t-j+1 and t-j days after onset
-      tmp = R::pgamma(t-j+1, shape1, scale1, true, false) - R::pgamma(t-j, shape1, scale1, true,false);
+      tmp = R::pgamma(t-j+1, alpha, scale, true, false) - R::pgamma(t-j, alpha, scale, true,false);
       probs(t,j) = tmp;
     }
   }

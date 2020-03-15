@@ -32,28 +32,41 @@ BEGIN_RCPP
 END_RCPP
 }
 // calculate_probs_preconfirmation
-NumericVector calculate_probs_preconfirmation(int tmax, double shape1, double shape2);
-RcppExport SEXP _covback_calculate_probs_preconfirmation(SEXP tmaxSEXP, SEXP shape1SEXP, SEXP shape2SEXP) {
+NumericVector calculate_probs_preconfirmation(int tmax, double alpha, double scale);
+RcppExport SEXP _covback_calculate_probs_preconfirmation(SEXP tmaxSEXP, SEXP alphaSEXP, SEXP scaleSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< int >::type tmax(tmaxSEXP);
-    Rcpp::traits::input_parameter< double >::type shape1(shape1SEXP);
-    Rcpp::traits::input_parameter< double >::type shape2(shape2SEXP);
-    rcpp_result_gen = Rcpp::wrap(calculate_probs_preconfirmation(tmax, shape1, shape2));
+    Rcpp::traits::input_parameter< double >::type alpha(alphaSEXP);
+    Rcpp::traits::input_parameter< double >::type scale(scaleSEXP);
+    rcpp_result_gen = Rcpp::wrap(calculate_probs_preconfirmation(tmax, alpha, scale));
+    return rcpp_result_gen;
+END_RCPP
+}
+// calculate_probs_notrecovered
+NumericVector calculate_probs_notrecovered(int tmax, double alpha, double scale);
+RcppExport SEXP _covback_calculate_probs_notrecovered(SEXP tmaxSEXP, SEXP alphaSEXP, SEXP scaleSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< int >::type tmax(tmaxSEXP);
+    Rcpp::traits::input_parameter< double >::type alpha(alphaSEXP);
+    Rcpp::traits::input_parameter< double >::type scale(scaleSEXP);
+    rcpp_result_gen = Rcpp::wrap(calculate_probs_notrecovered(tmax, alpha, scale));
     return rcpp_result_gen;
 END_RCPP
 }
 // calculate_serial_interval_probs
-NumericVector calculate_serial_interval_probs(int tmax, double par1, double par2);
-RcppExport SEXP _covback_calculate_serial_interval_probs(SEXP tmaxSEXP, SEXP par1SEXP, SEXP par2SEXP) {
+NumericVector calculate_serial_interval_probs(int tmax, double alpha, double scale);
+RcppExport SEXP _covback_calculate_serial_interval_probs(SEXP tmaxSEXP, SEXP alphaSEXP, SEXP scaleSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< int >::type tmax(tmaxSEXP);
-    Rcpp::traits::input_parameter< double >::type par1(par1SEXP);
-    Rcpp::traits::input_parameter< double >::type par2(par2SEXP);
-    rcpp_result_gen = Rcpp::wrap(calculate_serial_interval_probs(tmax, par1, par2));
+    Rcpp::traits::input_parameter< double >::type alpha(alphaSEXP);
+    Rcpp::traits::input_parameter< double >::type scale(scaleSEXP);
+    rcpp_result_gen = Rcpp::wrap(calculate_serial_interval_probs(tmax, alpha, scale));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -338,6 +351,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_covback_calculate_onset_probs", (DL_FUNC) &_covback_calculate_onset_probs, 3},
     {"_covback_calculate_probs_presymptomatic", (DL_FUNC) &_covback_calculate_probs_presymptomatic, 3},
     {"_covback_calculate_probs_preconfirmation", (DL_FUNC) &_covback_calculate_probs_preconfirmation, 3},
+    {"_covback_calculate_probs_notrecovered", (DL_FUNC) &_covback_calculate_probs_notrecovered, 3},
     {"_covback_calculate_serial_interval_probs", (DL_FUNC) &_covback_calculate_serial_interval_probs, 3},
     {"_covback_prob_not_left_per_day", (DL_FUNC) &_covback_prob_not_left_per_day, 1},
     {"_covback_prob_leave_on_day", (DL_FUNC) &_covback_prob_leave_on_day, 2},

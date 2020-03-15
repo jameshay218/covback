@@ -12,6 +12,7 @@ create_model_func_provinces <- function(parTab, data=NULL, PRIOR_FUNC=NULL,
     unique_provinces <- unique_provinces[unique_provinces != "all"]
     n_provinces <- length(unique_provinces)
     
+    ## If not provided data to fit to, then generate skeleton for solving model
     if (!is.null(data)) {
         data <- data %>% arrange(province, date)
         times <- data %>% filter(province == "1") %>% pull(date)
@@ -33,7 +34,7 @@ create_model_func_provinces <- function(parTab, data=NULL, PRIOR_FUNC=NULL,
         bigT <- tmax + 1
     }
 
-    ## Exportation and importation probabilities
+    ## Exportation and importation probabilities, if >1 province
     if(n_provinces > 1) {
       leave_matrix <- prob_leave_on_day(daily_export_probs, tmax)
       ## For each province, what's the daily probability of receiving a person from the seed province?
@@ -44,7 +45,7 @@ create_model_func_provinces <- function(parTab, data=NULL, PRIOR_FUNC=NULL,
       }
     }
 
-
+    ## If a time-varying confirmation delay distribution is not provided, generate a fixed one
     if(!is.null(time_varying_confirm_delay_pars)){
         report_delay_mat <- calculate_reporting_delay_matrix(time_varying_confirm_delay_pars$shape, time_varying_confirm_delay_pars$scale)
     }
@@ -52,11 +53,20 @@ create_model_func_provinces <- function(parTab, data=NULL, PRIOR_FUNC=NULL,
      model_func <- function(pars_all) {
         names(pars_all) <- par_names
         if(!solve_prior){
+          ###########################################################
+          ## STEP A - EXTRACT PARAMETERS
+          ###########################################################
           pars_seed <- pars_all[which(par_provinces == "1")]
           
+          ## Negative binomial size
+          size <- pars_all["size"]
+          
+          ###########################################################
+          ## i) get confirmation delay matrix, used for model fitting
+          ###########################################################
           ## Gamma distribution
-          shape <- pars_all["shape"]
-          scale <- pars_all["scale"]
+          shape <- pars_all["confirm_delay_shape"]
+          scale <- pars_all["confirm_delay_scale"]
   
           ## If time-varying parameters not specified, enumerate out the point
           ## estimates
@@ -64,49 +74,55 @@ create_model_func_provinces <- function(parTab, data=NULL, PRIOR_FUNC=NULL,
           if (is.null(time_varying_confirm_delay_pars)) {
               report_delay_mat <- calculate_reporting_delay_matrix_constant(shape,scale,tmax)
           }
-          
-          ## Negative binomial size
-          size <- pars_all["size"]
-  
+          ###########################################################
+          ## ii) get incubation period distribution
+          ###########################################################
           ## Incubation period    
           weibull_alpha <- pars_all["weibull_alpha"]
           weibull_sigma <- pars_all["weibull_sigma"]
-          #print(weibull_alpha)
-          #print(weibull_sigma)
-          ## Serial interval
-          #serial_lmean <- pars_all["lnorm_mean"]
-          #serial_lsd <- pars_all["lnorm_sd"]
-          serial_interval_par1 <- pars_all["serial_interval_gamma_par1"]
-          serial_interval_par2 <- 1/pars_all["serial_interval_gamma_par2"]
-  
-          serial_probs <- calculate_serial_interval_probs(tmax, serial_interval_par1, serial_interval_par2)
-          
           ## For each day with a potential infection onset, get the probability of leaving at some point in the future before
           ## symptom onset
-          ## daily_prob_leaving <- prob_left_pre_sympt(pars_seed["export_prob"], weibull_alpha, weibull_sigma, 100)
           presymptom_probs <- calculate_probs_presymptomatic(tmax, weibull_alpha, weibull_sigma)
+          onset_probs <- calculate_onset_probs(tmax, weibull_alpha, weibull_sigma)
           
+          ###########################################################
+          ## iii) get serial interval distribution to generate secondary cases over
+          ###########################################################
+          ## Serial interval
+          serial_interval_alpha <- pars_all["serial_interval_gamma_alpha"]
+          serial_interval_scale <- pars_all["serial_interval_gamma_scale"]
+  
+          serial_probs <- calculate_serial_interval_probs(tmax, serial_interval_alpha, serial_interval_scale)
+          
+          ###########################################################
+          ## iv) get probability of leaving pre-symptoms, given travel data
+          ###########################################################
+          ## If only one province, then you don't have anywhere to leave to
           if(n_provinces > 1) {
             daily_prob_leaving <- prob_leave_pre_symptoms_vector(leave_matrix, presymptom_probs)
           } else {
             daily_prob_leaving <- numeric(tmax + 1)
           }
-          
-          onset_probs <- calculate_onset_probs(tmax, weibull_alpha, weibull_sigma)
-          
   
+          ###########################################################
+          ## STEP 1 - GROWTH OF INFECTIONS IN SEED PROVINCE
+          ###########################################################          
           ## Get local growth of seed province. Will add/subtract this from later estimates
+          ## Exponential growth for model 1, logistic for model 2
           if(model_ver == 1){
             infections_seed <- pars_seed["i0"]*daily_exp_interval_cpp(pars_seed["growth_rate"], tmax, pars_seed["t0"])
           } else {
+            ## T-switch is based on symptom onsets. So t-switch (peak) for infections is
+            ## peak of symptom onsets minus mode of incubation period distribution
             t_switch <- pars_all["t_switch"]
             if(weibull_alpha > 1) {
               inc_mode <- weibull_mode(weibull_alpha, weibull_sigma)
             } else {
               inc_mode <- 0
             }
-            #print(inc_mode)
             t_switch <- t_switch - inc_mode
+            
+            ## Can define logistic growth rate in terms of K and inflection point
             growth_rate <- log(pars_all["K"]-1)/t_switch
             infections_seed <- daily_sigmoid_interval_cpp(growth_rate, pars_all["K"], tmax, pars_seed["t0"])
           }

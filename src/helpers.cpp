@@ -23,10 +23,22 @@ NumericVector calculate_probs_presymptomatic(int tmax, double weibull_alpha, dou
 }
 
 //[[Rcpp::export]]
-NumericVector calculate_probs_preconfirmation(int tmax, double shape1, double shape2){
+NumericVector calculate_probs_preconfirmation(int tmax, double alpha, double scale){
   NumericVector probs(tmax + 1);
   for(int t = 0; t <= tmax; ++t){
-    probs[t] = 1 - R::pgamma(t, shape1, shape2, true, false);
+    probs[t] = 1 - R::pgamma(t, alpha, scale, true, false);
+  }
+  return(probs);
+}
+
+/////////////////////////////////////
+// RECOVERY PROBABILITIES
+/////////////////////////////////////
+//[[Rcpp::export]]
+NumericVector calculate_probs_notrecovered(int tmax, double alpha, double scale){
+  NumericVector probs(tmax + 1);
+  for(int t = 0; t <= tmax; ++t){
+    probs[t] = 1 - R::pgamma(t, alpha, scale, true, false);
   }
   return(probs);
 }
@@ -36,11 +48,11 @@ NumericVector calculate_probs_preconfirmation(int tmax, double shape1, double sh
 // LOCAL TRANSMISSION PROBABILITIES
 /////////////////////////////////////
 //[[Rcpp::export]]
-NumericVector calculate_serial_interval_probs(int tmax, double par1, double par2){
+NumericVector calculate_serial_interval_probs(int tmax, double alpha, double scale){
   NumericVector probs(tmax+1);
   for(int t = 0; t <= tmax; ++t){
 //probs[t] = R::plnorm(t+1, lnorm_mean, lnorm_sd, true, false) - R::plnorm(t, lnorm_mean, lnorm_sd, true, false);
-    probs[t] = R::pgamma(t+1, par1, par2, true, false) - R::pgamma(t, par1, par2, true, false);
+    probs[t] = R::pgamma(t+1, alpha, scale, true, false) - R::pgamma(t, alpha, scale, true, false);
   }
   return(probs);
 }

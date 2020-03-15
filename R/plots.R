@@ -51,7 +51,8 @@ generate_prediction_intervals <- function(chain, parTab, data, time_varying_conf
         names(pars) <- par_names
         
         prob_presymptomatic  <- calculate_probs_presymptomatic(100, pars["weibull_alpha"], pars["weibull_sigma"])
-        prob_preconfirmation  <- calculate_probs_preconfirmation(100, pars["shape"], pars["scale"])
+        prob_preconfirmation  <- calculate_probs_preconfirmation(100, pars["confirm_delay_shape"], 
+                                                                 pars["confirm_delay_scale"])
         
         res <- model_func(pars)
 
@@ -153,7 +154,7 @@ plot_confirm_delay <- function(chain, nsamp=100,xmax=40){
   
   for(i in seq_along(samps)){
     pars <- get_index_par(chain, samps[i])
-    res[i,] <- dgamma(0:xmax, shape=pars["shape"],scale=pars["scale"])
+    res[i,] <- dgamma(0:xmax, shape=pars["confirm_delay_shape"],scale=pars["confirm_delay_scale"])
   }
   quants <- t(apply(res, 2, function(x) quantile(x,c(0.025,0.5,0.975))))
   quants <- data.frame(quants)

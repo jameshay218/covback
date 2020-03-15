@@ -9,12 +9,16 @@ calculate_probs_presymptomatic <- function(tmax, weibull_alpha, weibull_sigma) {
     .Call('_covback_calculate_probs_presymptomatic', PACKAGE = 'covback', tmax, weibull_alpha, weibull_sigma)
 }
 
-calculate_probs_preconfirmation <- function(tmax, shape1, shape2) {
-    .Call('_covback_calculate_probs_preconfirmation', PACKAGE = 'covback', tmax, shape1, shape2)
+calculate_probs_preconfirmation <- function(tmax, alpha, scale) {
+    .Call('_covback_calculate_probs_preconfirmation', PACKAGE = 'covback', tmax, alpha, scale)
 }
 
-calculate_serial_interval_probs <- function(tmax, par1, par2) {
-    .Call('_covback_calculate_serial_interval_probs', PACKAGE = 'covback', tmax, par1, par2)
+calculate_probs_notrecovered <- function(tmax, alpha, scale) {
+    .Call('_covback_calculate_probs_notrecovered', PACKAGE = 'covback', tmax, alpha, scale)
+}
+
+calculate_serial_interval_probs <- function(tmax, alpha, scale) {
+    .Call('_covback_calculate_serial_interval_probs', PACKAGE = 'covback', tmax, alpha, scale)
 }
 
 prob_not_left_per_day <- function(probs) {
