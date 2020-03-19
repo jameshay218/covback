@@ -112,7 +112,7 @@ create_export_prob_matrix <- function(total_travellers, wuhan_pop_ini,
   probs <- numeric(length(times))
   probs[which(times < min(export_dat$Date))] <- export_probs[1]
   probs[match(export_dat$Date, times)] <- export_probs
-  probs
+  return(list(probs=probs,total_pop=total_pop))
 }
 
 #' @export

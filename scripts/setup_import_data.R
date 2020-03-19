@@ -3,7 +3,7 @@ setwd("~/Documents/GitHub/covback/")
 travel_probs <- read_csv("data/extracted_travel_proportions.csv")
 province_key <- read_csv("data/extracted_data_key.csv")
 
-total_travellers <- 5000000
+total_travellers <- 4000000
 wuhan_pop_ini <- 11080000
 
 tmin <- as.POSIXct("2019-11-01",format="%Y-%m-%d", tz="UTC")
@@ -35,32 +35,32 @@ ggplot(travel_probs) + geom_line(aes(x=date,y=percentage_scaled,col=province_use
 
 
 import_probs <- travel_probs %>% bind_rows(travel_probs_hubei) %>% select(date, province_use, percentage_scaled) %>% 
-  pivot_wider(names_from=province_use, values_from=percentage_scaled)
+  pivot_wider(names_from=date, values_from=percentage_scaled)
 
 ## Probability of export is the number of travellers that move out of Wuhan that
 ## go to other Chinese provinces
-export_prob_dat <- read_csv("data/export_probs_raw.csv")
-export_prob_dat$frac_leave_hubei <- export_probs$x
-
-export_probs <- create_export_prob_matrix(total_travellers, wuhan_pop_ini, export_dat, tmin, tmax)
+export_prob_dat <- read_csv("data/raw/export_probs_raw.csv")
+#export_prob_dat$frac_leave_hubei <- export_prob_dat$x
+export_prob_dat$Date <- as.POSIXct(export_prob_dat$Date,format="%m/%d/%Y",tz="UTC")
+export_probs <- create_export_prob_matrix(total_travellers, wuhan_pop_ini, export_prob_dat, tmin, tmax,
+                                          index_date_end=as.POSIXct("2020-01-23", 
+                                                                    format = "%Y-%m-%d", tz = "UTC"))
 
 times <- seq(tmin, tmax, by="1 day")
-export_probs_final <- tibble(date=times,export_prob=export_probs)
+export_probs_final <- tibble(date=times,export_prob=export_probs$probs)
 
-import_probs <- import_probs %>% arrange(-`2020-01-01`)
-
-#write_csv(export_probs_final, "export_probs_final.csv")
-#write_csv(import_probs, "import_probs_final.csv")
+write_csv(export_probs_final, "export_probs_lower.csv")
+#write_csv(import_probs, "import_probs_lower.csv")
 
 
 
-import_probs_melt <- reshape2::melt(import_probs)
-factor_order <- import_probs_melt %>% filter(Var1 != "Hubei") %>% group_by(Var1) %>% summarise(x=max(value)) %>%
-  arrange(-x) %>% pull(Var1)
+import_probs_melt <- reshape2::melt(import_probs,id.vars="date")
+factor_order <- import_probs_melt %>% filter(variable != "Hubei") %>% group_by(variable) %>% summarise(x=max(value)) %>%
+  arrange(-x) %>% pull(variable)
 factor_order <- as.character(factor_order)
-import_probs_melt <- import_probs_melt %>% filter(Var1 != "Hubei")
-import_probs_melt$Var1 <- factor(import_probs_melt$Var1, levels=factor_order)
-p1 <- ggplot(import_probs_melt[import_probs_melt$Var1 != "Hubei",]) + geom_line(aes(x=as.numeric(Var2),y=value,col=Var1))
+import_probs_melt <- import_probs_melt %>% filter(variable != "Hubei")
+import_probs_melt$Var1 <- factor(import_probs_melt$variable, levels=factor_order)
+p1 <- ggplot(import_probs_melt[import_probs_melt$variable != "Hubei",]) + geom_line(aes(x=as.numeric(date),y=value,col=Var1))
 
 
 import_probs_melt <- reshape2::melt(import_probs1)

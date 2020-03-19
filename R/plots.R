@@ -35,12 +35,13 @@ plot_model_fit <- function(chain, parTab, data, confirm_delay_pars=NULL,
 generate_prediction_intervals <- function(chain, parTab, data, time_varying_confirm_delay_pars=NULL,
                                           daily_import_probs, daily_export_probs,
                                           nsamp=1000,
-                                          add_noise=TRUE, noise_ver="poisson",
+                                          add_noise=TRUE, noise_ver="poisson",incubation_ver="weibull",
                                           return_draws=FALSE,
                                           model_ver=1){
-    model_func <- create_model_func_provinces(parTab, data, time_varying_confirm_delay_pars=time_varying_confirm_delay_pars,
+    model_func <- create_model_func_provinces_fixed(parTab, data, time_varying_confirm_delay_pars=time_varying_confirm_delay_pars,
                                               daily_import_probs = daily_import_probs, daily_export_probs = daily_export_probs,
-                                              ver="model",model_ver=model_ver)
+                                              ver="model",model_ver=model_ver,incubation_ver=incubation_ver,
+                                              calculate_prevalence=TRUE)
     par_names <- parTab$names
 
     samps <- sample(unique(chain$sampno), nsamp)
@@ -50,34 +51,23 @@ generate_prediction_intervals <- function(chain, parTab, data, time_varying_conf
         pars <- get_index_par(chain, samps[i])
         names(pars) <- par_names
         
-        prob_presymptomatic  <- calculate_probs_presymptomatic(100, pars["weibull_alpha"], pars["weibull_sigma"])
-        prob_preconfirmation  <- calculate_probs_preconfirmation(100, pars["confirm_delay_shape"], 
-                                                                 pars["confirm_delay_scale"])
+        if(incubation_ver == "weibull"){
+          prob_presymptomatic  <- calculate_probs_presymptomatic_weibull(100, pars["weibull_alpha"], pars["weibull_sigma"])
+          prob_preconfirmation  <- calculate_probs_preconfirmation(100, pars["confirm_delay_shape"], 
+                                                                   pars["confirm_delay_scale"])
+        } else {
+          prob_presymptomatic  <- calculate_probs_presymptomatic_lnorm(100, pars["lnorm_incu_par1"], pars["lnorm_incu_par2"])
+          prob_preconfirmation  <- calculate_probs_preconfirmation(100, pars["confirm_delay_shape"], 
+                                                                           pars["confirm_delay_scale"])
+          
+        }
+        
+        tmax <- length(daily_export_probs) + 1
+      probs_pre_recovery <- calculate_probs_notrecovered(100, pars["recovery_shape"], 
+                                                           pars["recovery_scale"])
         
         res <- model_func(pars)
 
-        infection_prevalence <- res %>% 
-          filter(var == "infections") %>% 
-          group_by(province) %>%
-          mutate(n = calculate_infection_prevalence(n, prob_presymptomatic),
-                 var = "infection_prev")
-        
-        symptomatic_prevalence <- res %>% 
-          filter(var == "infections") %>% 
-          group_by(province) %>%
-          mutate(n = calculate_infection_prevalence(n, 1-prob_presymptomatic),
-                 var = "symptomatic_prevalence")
-        
-        onset_prevalence <- res %>% 
-          filter(var == "onsets") %>% 
-          group_by(province) %>%
-          mutate(n = calculate_infection_prevalence(n, prob_preconfirmation),
-                 var = "onset_prev")
-        
-        total_prev <- bind_rows(onset_prevalence, infection_prevalence) %>% 
-          group_by(province, date) %>%
-          summarise(n= sum(n)) %>%
-          mutate(var="total_prevalence") %>% ungroup()
 
         #confirmations <- res %>% filter(var == "confirmations") %>% pull(n)
         if (add_noise) {
@@ -93,8 +83,8 @@ generate_prediction_intervals <- function(chain, parTab, data, time_varying_conf
             } else {
                 subset_confirmations <- subset_confirmations %>% mutate(var = "observations")
             }
+            res <- bind_rows(res, subset_confirmations)
         }
-        res <- bind_rows(res, subset_confirmations, infection_prevalence, onset_prevalence, total_prev, symptomatic_prevalence)
         res$sampno <- i
         store_all <- bind_rows(store_all, res)
     }
@@ -154,7 +144,8 @@ plot_confirm_delay <- function(chain, nsamp=100,xmax=40){
   
   for(i in seq_along(samps)){
     pars <- get_index_par(chain, samps[i])
-    res[i,] <- dgamma(0:xmax, shape=pars["confirm_delay_shape"],scale=pars["confirm_delay_scale"])
+    res[i,] <- pgamma(1:(xmax+1), shape=pars["confirm_delay_shape"],scale=pars["confirm_delay_scale"]) - 
+      pgamma(0:xmax, shape=pars["confirm_delay_shape"],scale=pars["confirm_delay_scale"])
   }
   quants <- t(apply(res, 2, function(x) quantile(x,c(0.025,0.5,0.975))))
   quants <- data.frame(quants)

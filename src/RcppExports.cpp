@@ -5,29 +5,55 @@
 
 using namespace Rcpp;
 
-// calculate_onset_probs
-NumericVector calculate_onset_probs(int tmax, double weibull_alpha, double weibull_sigma);
-RcppExport SEXP _covback_calculate_onset_probs(SEXP tmaxSEXP, SEXP weibull_alphaSEXP, SEXP weibull_sigmaSEXP) {
+// calculate_onset_probs_weibull
+NumericVector calculate_onset_probs_weibull(int tmax, double weibull_alpha, double weibull_sigma);
+RcppExport SEXP _covback_calculate_onset_probs_weibull(SEXP tmaxSEXP, SEXP weibull_alphaSEXP, SEXP weibull_sigmaSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< int >::type tmax(tmaxSEXP);
     Rcpp::traits::input_parameter< double >::type weibull_alpha(weibull_alphaSEXP);
     Rcpp::traits::input_parameter< double >::type weibull_sigma(weibull_sigmaSEXP);
-    rcpp_result_gen = Rcpp::wrap(calculate_onset_probs(tmax, weibull_alpha, weibull_sigma));
+    rcpp_result_gen = Rcpp::wrap(calculate_onset_probs_weibull(tmax, weibull_alpha, weibull_sigma));
     return rcpp_result_gen;
 END_RCPP
 }
-// calculate_probs_presymptomatic
-NumericVector calculate_probs_presymptomatic(int tmax, double weibull_alpha, double weibull_sigma);
-RcppExport SEXP _covback_calculate_probs_presymptomatic(SEXP tmaxSEXP, SEXP weibull_alphaSEXP, SEXP weibull_sigmaSEXP) {
+// calculate_probs_presymptomatic_weibull
+NumericVector calculate_probs_presymptomatic_weibull(int tmax, double weibull_alpha, double weibull_sigma);
+RcppExport SEXP _covback_calculate_probs_presymptomatic_weibull(SEXP tmaxSEXP, SEXP weibull_alphaSEXP, SEXP weibull_sigmaSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< int >::type tmax(tmaxSEXP);
     Rcpp::traits::input_parameter< double >::type weibull_alpha(weibull_alphaSEXP);
     Rcpp::traits::input_parameter< double >::type weibull_sigma(weibull_sigmaSEXP);
-    rcpp_result_gen = Rcpp::wrap(calculate_probs_presymptomatic(tmax, weibull_alpha, weibull_sigma));
+    rcpp_result_gen = Rcpp::wrap(calculate_probs_presymptomatic_weibull(tmax, weibull_alpha, weibull_sigma));
+    return rcpp_result_gen;
+END_RCPP
+}
+// calculate_onset_probs_lnorm
+NumericVector calculate_onset_probs_lnorm(int tmax, double par1, double par2);
+RcppExport SEXP _covback_calculate_onset_probs_lnorm(SEXP tmaxSEXP, SEXP par1SEXP, SEXP par2SEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< int >::type tmax(tmaxSEXP);
+    Rcpp::traits::input_parameter< double >::type par1(par1SEXP);
+    Rcpp::traits::input_parameter< double >::type par2(par2SEXP);
+    rcpp_result_gen = Rcpp::wrap(calculate_onset_probs_lnorm(tmax, par1, par2));
+    return rcpp_result_gen;
+END_RCPP
+}
+// calculate_probs_presymptomatic_lnorm
+NumericVector calculate_probs_presymptomatic_lnorm(int tmax, double par1, double par2);
+RcppExport SEXP _covback_calculate_probs_presymptomatic_lnorm(SEXP tmaxSEXP, SEXP par1SEXP, SEXP par2SEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< int >::type tmax(tmaxSEXP);
+    Rcpp::traits::input_parameter< double >::type par1(par1SEXP);
+    Rcpp::traits::input_parameter< double >::type par2(par2SEXP);
+    rcpp_result_gen = Rcpp::wrap(calculate_probs_presymptomatic_lnorm(tmax, par1, par2));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -130,7 +156,7 @@ BEGIN_RCPP
 END_RCPP
 }
 // prob_daily_arrival
-NumericVector prob_daily_arrival(NumericVector export_probs, NumericVector import_probs, int tmax);
+NumericMatrix prob_daily_arrival(NumericVector export_probs, NumericVector import_probs, int tmax);
 RcppExport SEXP _covback_prob_daily_arrival(SEXP export_probsSEXP, SEXP import_probsSEXP, SEXP tmaxSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
@@ -166,15 +192,53 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// calculate_infection_prevalence
-NumericVector calculate_infection_prevalence(NumericVector incidence, NumericVector prob_presymptomatic);
-RcppExport SEXP _covback_calculate_infection_prevalence(SEXP incidenceSEXP, SEXP prob_presymptomaticSEXP) {
+// local_travel_matrix_precalc
+NumericMatrix local_travel_matrix_precalc(NumericMatrix prob_arrival_mat);
+RcppExport SEXP _covback_local_travel_matrix_precalc(SEXP prob_arrival_matSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericMatrix >::type prob_arrival_mat(prob_arrival_matSEXP);
+    rcpp_result_gen = Rcpp::wrap(local_travel_matrix_precalc(prob_arrival_mat));
+    return rcpp_result_gen;
+END_RCPP
+}
+// calculate_local_cases
+NumericVector calculate_local_cases(NumericMatrix precalc_local, NumericVector infections, NumericVector serial_probs, double r_local);
+RcppExport SEXP _covback_calculate_local_cases(SEXP precalc_localSEXP, SEXP infectionsSEXP, SEXP serial_probsSEXP, SEXP r_localSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericMatrix >::type precalc_local(precalc_localSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type infections(infectionsSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type serial_probs(serial_probsSEXP);
+    Rcpp::traits::input_parameter< double >::type r_local(r_localSEXP);
+    rcpp_result_gen = Rcpp::wrap(calculate_local_cases(precalc_local, infections, serial_probs, r_local));
+    return rcpp_result_gen;
+END_RCPP
+}
+// calculate_infection_prevalence_local
+NumericVector calculate_infection_prevalence_local(NumericVector incidence, NumericVector prob_presymptomatic);
+RcppExport SEXP _covback_calculate_infection_prevalence_local(SEXP incidenceSEXP, SEXP prob_presymptomaticSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< NumericVector >::type incidence(incidenceSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type prob_presymptomatic(prob_presymptomaticSEXP);
-    rcpp_result_gen = Rcpp::wrap(calculate_infection_prevalence(incidence, prob_presymptomatic));
+    rcpp_result_gen = Rcpp::wrap(calculate_infection_prevalence_local(incidence, prob_presymptomatic));
+    return rcpp_result_gen;
+END_RCPP
+}
+// calculate_infection_prevalence_imported
+NumericVector calculate_infection_prevalence_imported(NumericVector incidence, NumericVector prob_presymptomatic, NumericMatrix prob_have_arrived);
+RcppExport SEXP _covback_calculate_infection_prevalence_imported(SEXP incidenceSEXP, SEXP prob_presymptomaticSEXP, SEXP prob_have_arrivedSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericVector >::type incidence(incidenceSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type prob_presymptomatic(prob_presymptomaticSEXP);
+    Rcpp::traits::input_parameter< NumericMatrix >::type prob_have_arrived(prob_have_arrivedSEXP);
+    rcpp_result_gen = Rcpp::wrap(calculate_infection_prevalence_imported(incidence, prob_presymptomatic, prob_have_arrived));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -191,15 +255,27 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// calculate_symptomatic_prevalence
-NumericVector calculate_symptomatic_prevalence(NumericVector onsets, NumericVector prob_not_confirmed);
-RcppExport SEXP _covback_calculate_symptomatic_prevalence(SEXP onsetsSEXP, SEXP prob_not_confirmedSEXP) {
+// calculate_preconfirmation_prevalence
+NumericVector calculate_preconfirmation_prevalence(NumericVector onsets, NumericVector prob_not_confirmed);
+RcppExport SEXP _covback_calculate_preconfirmation_prevalence(SEXP onsetsSEXP, SEXP prob_not_confirmedSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< NumericVector >::type onsets(onsetsSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type prob_not_confirmed(prob_not_confirmedSEXP);
-    rcpp_result_gen = Rcpp::wrap(calculate_symptomatic_prevalence(onsets, prob_not_confirmed));
+    rcpp_result_gen = Rcpp::wrap(calculate_preconfirmation_prevalence(onsets, prob_not_confirmed));
+    return rcpp_result_gen;
+END_RCPP
+}
+// calculate_unrecovered_prevalence
+NumericVector calculate_unrecovered_prevalence(NumericVector onsets, NumericVector prob_not_recovered);
+RcppExport SEXP _covback_calculate_unrecovered_prevalence(SEXP onsetsSEXP, SEXP prob_not_recoveredSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericVector >::type onsets(onsetsSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type prob_not_recovered(prob_not_recoveredSEXP);
+    rcpp_result_gen = Rcpp::wrap(calculate_unrecovered_prevalence(onsets, prob_not_recovered));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -348,8 +424,10 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_covback_calculate_onset_probs", (DL_FUNC) &_covback_calculate_onset_probs, 3},
-    {"_covback_calculate_probs_presymptomatic", (DL_FUNC) &_covback_calculate_probs_presymptomatic, 3},
+    {"_covback_calculate_onset_probs_weibull", (DL_FUNC) &_covback_calculate_onset_probs_weibull, 3},
+    {"_covback_calculate_probs_presymptomatic_weibull", (DL_FUNC) &_covback_calculate_probs_presymptomatic_weibull, 3},
+    {"_covback_calculate_onset_probs_lnorm", (DL_FUNC) &_covback_calculate_onset_probs_lnorm, 3},
+    {"_covback_calculate_probs_presymptomatic_lnorm", (DL_FUNC) &_covback_calculate_probs_presymptomatic_lnorm, 3},
     {"_covback_calculate_probs_preconfirmation", (DL_FUNC) &_covback_calculate_probs_preconfirmation, 3},
     {"_covback_calculate_probs_notrecovered", (DL_FUNC) &_covback_calculate_probs_notrecovered, 3},
     {"_covback_calculate_serial_interval_probs", (DL_FUNC) &_covback_calculate_serial_interval_probs, 3},
@@ -361,9 +439,13 @@ static const R_CallMethodDef CallEntries[] = {
     {"_covback_prob_daily_arrival", (DL_FUNC) &_covback_prob_daily_arrival, 3},
     {"_covback_prob_arrive_pre_symptoms", (DL_FUNC) &_covback_prob_arrive_pre_symptoms, 2},
     {"_covback_prob_arrive_pre_symptoms_vector", (DL_FUNC) &_covback_prob_arrive_pre_symptoms_vector, 2},
-    {"_covback_calculate_infection_prevalence", (DL_FUNC) &_covback_calculate_infection_prevalence, 2},
+    {"_covback_local_travel_matrix_precalc", (DL_FUNC) &_covback_local_travel_matrix_precalc, 1},
+    {"_covback_calculate_local_cases", (DL_FUNC) &_covback_calculate_local_cases, 4},
+    {"_covback_calculate_infection_prevalence_local", (DL_FUNC) &_covback_calculate_infection_prevalence_local, 2},
+    {"_covback_calculate_infection_prevalence_imported", (DL_FUNC) &_covback_calculate_infection_prevalence_imported, 3},
     {"_covback_calculate_infection_prevalence_hubei", (DL_FUNC) &_covback_calculate_infection_prevalence_hubei, 3},
-    {"_covback_calculate_symptomatic_prevalence", (DL_FUNC) &_covback_calculate_symptomatic_prevalence, 2},
+    {"_covback_calculate_preconfirmation_prevalence", (DL_FUNC) &_covback_calculate_preconfirmation_prevalence, 2},
+    {"_covback_calculate_unrecovered_prevalence", (DL_FUNC) &_covback_calculate_unrecovered_prevalence, 2},
     {"_covback_daily_sigmoid_interval_cpp", (DL_FUNC) &_covback_daily_sigmoid_interval_cpp, 4},
     {"_covback_daily_exp_interval_cpp", (DL_FUNC) &_covback_daily_exp_interval_cpp, 3},
     {"_covback_calculate_infection_incidence_time", (DL_FUNC) &_covback_calculate_infection_incidence_time, 7},

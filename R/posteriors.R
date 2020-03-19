@@ -2,7 +2,7 @@
 create_model_func_provinces <- function(parTab, data=NULL, PRIOR_FUNC=NULL,
                                         tmax=NULL, time_varying_confirm_delay_pars=NULL,
                                         daily_import_probs=NULL, daily_export_probs=NULL,
-                                        ver="posterior", noise_ver="poisson",
+                                        ver="posterior", noise_ver="poisson",incubation_ver="weibull",
                                         model_ver=1, solve_prior=FALSE){
     par_names <- parTab$names
     par_provinces <- parTab$province
@@ -77,13 +77,22 @@ create_model_func_provinces <- function(parTab, data=NULL, PRIOR_FUNC=NULL,
           ###########################################################
           ## ii) get incubation period distribution
           ###########################################################
-          ## Incubation period    
-          weibull_alpha <- pars_all["weibull_alpha"]
-          weibull_sigma <- pars_all["weibull_sigma"]
-          ## For each day with a potential infection onset, get the probability of leaving at some point in the future before
-          ## symptom onset
-          presymptom_probs <- calculate_probs_presymptomatic(tmax, weibull_alpha, weibull_sigma)
-          onset_probs <- calculate_onset_probs(tmax, weibull_alpha, weibull_sigma)
+          ## Incubation period
+          if(incubation_ver == "weibull"){
+            weibull_alpha <- pars_all["weibull_alpha"]
+            weibull_sigma <- pars_all["weibull_sigma"]
+            ## For each day with a potential infection onset, get the probability of leaving at some point in the future before
+            ## symptom onset
+            presymptom_probs <- calculate_probs_presymptomatic_weibull(tmax, weibull_alpha, weibull_sigma)
+            onset_probs <- calculate_onset_probs_weibull(tmax, weibull_alpha, weibull_sigma)
+          } else {
+            incu_par1 <- pars_all["lnorm_incu_par1"]
+            incu_par2 <- pars_all["lnorm_incu_par2"]
+            ## For each day with a potential infection onset, get the probability of leaving at some point in the future before
+            ## symptom onset
+            presymptom_probs <- calculate_probs_presymptomatic_lnorm(tmax, incu_par1, incu_par2)
+            onset_probs <- calculate_onset_probs_lnorm(tmax, incu_par1, incu_par2)
+          }
           
           ###########################################################
           ## iii) get serial interval distribution to generate secondary cases over
@@ -103,7 +112,44 @@ create_model_func_provinces <- function(parTab, data=NULL, PRIOR_FUNC=NULL,
           } else {
             daily_prob_leaving <- numeric(tmax + 1)
           }
-  
+          
+          ###########################################################
+          ## v) find shift to infection incidence inflection point 
+          ##    needed to get onset inflection point on known date
+          ###########################################################
+          K <- pars_all["K"]
+          if(model_ver == 2){
+            t_switch_onsets <- pars_all["t_switch"]
+            find_tswitch_offset <- function(){
+              f <- function(t_unknown){
+                t_switch_prime <- t_switch_onsets - t_unknown
+                growth <- log(K-1)/t_switch_prime
+                
+                y <- daily_sigmoid_interval_cpp(growth, K, tmax, 0)
+                onsets <- calculate_onset_incidence(y, onset_probs,tmax)
+                
+                t_switch_unknown <- which.max(onsets)
+                (t_switch_unknown - t_switch_onsets)^2
+              }
+              
+              t_unknown <- 0
+              test1 <- f(t_unknown)
+              t_unknown <- t_unknown + 1
+              test2 <- f(t_unknown)
+              while(test2 < test1){
+                test1 <- test2
+                t_unknown <- t_unknown + 1
+                test2 <- f(t_unknown)
+              }
+              t_unknown <- t_unknown - 1
+              return(t_unknown)
+            }
+            ## T-switch is based on symptom onsets. So t-switch (peak) for infections is
+            ## peak of symptom onsets minus mode of incubation period distribution
+            t_offset <- find_tswitch_offset()
+            t_switch <- t_switch_onsets - t_offset
+          }
+          
           ###########################################################
           ## STEP 1 - GROWTH OF INFECTIONS IN SEED PROVINCE
           ###########################################################          
@@ -112,16 +158,6 @@ create_model_func_provinces <- function(parTab, data=NULL, PRIOR_FUNC=NULL,
           if(model_ver == 1){
             infections_seed <- pars_seed["i0"]*daily_exp_interval_cpp(pars_seed["growth_rate"], tmax, pars_seed["t0"])
           } else {
-            ## T-switch is based on symptom onsets. So t-switch (peak) for infections is
-            ## peak of symptom onsets minus mode of incubation period distribution
-            t_switch <- pars_all["t_switch"]
-            if(weibull_alpha > 1) {
-              inc_mode <- weibull_mode(weibull_alpha, weibull_sigma)
-            } else {
-              inc_mode <- 0
-            }
-            t_switch <- t_switch - inc_mode
-            
             ## Can define logistic growth rate in terms of K and inflection point
             growth_rate <- log(pars_all["K"]-1)/t_switch
             infections_seed <- daily_sigmoid_interval_cpp(growth_rate, pars_all["K"], tmax, pars_seed["t0"])
@@ -169,17 +205,12 @@ create_model_func_provinces <- function(parTab, data=NULL, PRIOR_FUNC=NULL,
                                                 onset_probs, report_delay_mat,
                                                 tmax)
               } else {
-                t_switch <- pars_all["t_switch"]
-                inc_mode <- weibull_mode(weibull_alpha, weibull_sigma)
-                t_switch <- t_switch - inc_mode
                 growth_rate <- log(pars_all["K"]-1)/t_switch
                 res <- calculate_all_incidences_logistic(growth_rate, t0, i0, pars_all["K"],
                                                          import_cases,
                                                 onset_probs, report_delay_mat,
                                                 tmax)
               }
-              
-              
               ## Extract the 3 incidence types
               infections <- res$infections
               onsets <- res$onsets
