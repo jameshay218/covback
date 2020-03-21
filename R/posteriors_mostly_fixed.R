@@ -228,7 +228,6 @@ create_model_func_provinces_fixed <- function(parTab, data=NULL, PRIOR_FUNC=NULL
         t_offset <- find_tswitch_offset()
         t_switch <- t_switch_onsets - t_offset
       }
-      
       ###########################################################
       ## STEP 1 - GROWTH OF INFECTIONS IN SEED PROVINCE
       ###########################################################          
@@ -241,16 +240,18 @@ create_model_func_provinces_fixed <- function(parTab, data=NULL, PRIOR_FUNC=NULL
         growth_rate <- log(pars_all["K"]-1)/t_switch
         infections_seed <- daily_sigmoid_interval_cpp(growth_rate, pars_all["K"], tmax, pars_seed["t0"])
       }
-      
       all_infections <- numeric(bigT*n_provinces)
       all_confirmations <- numeric(bigT*n_provinces)
       all_onsets <- numeric(bigT*n_provinces)
       all_local_infections <- numeric(bigT*n_provinces)
+      all_imported_infections <- numeric(bigT*n_provinces)
+      
       
       all_presymptomatic_prevalence <- numeric(bigT*n_provinces)
       all_symptomatic_prevalence <- numeric(bigT*n_provinces)
       all_preconfirmation_prevalence <- numeric(bigT*n_provinces)
       all_cantravel_prevalence <- numeric(bigT*n_provinces)
+      all_disease_prevalence <- numeric(bigT*n_provinces)
       
       all_dat <- NULL
       ## Need to loop through each province
@@ -307,7 +308,6 @@ create_model_func_provinces_fixed <- function(parTab, data=NULL, PRIOR_FUNC=NULL
         
         #import_cases_local <- calculate_local_from_import_infections(import_cases*pars["local_r"], serial_probs, tmax)
         import_cases <- import_cases_time_of_infection + import_cases_local
-        
         if(model_ver == 1) {
           res <- calculate_all_incidences(growth_rate, t0, i0, import_cases,
                                           onset_probs, report_delay_mat,
@@ -330,6 +330,7 @@ create_model_func_provinces_fixed <- function(parTab, data=NULL, PRIOR_FUNC=NULL
         all_onsets[indices] <- onsets
         all_confirmations[indices] <- confirmations
         all_local_infections[indices] <- import_cases_local
+        all_imported_infections[indices] <- import_cases_time_of_infection
         
         if(calculate_prevalence){
           if(province == "1") {
@@ -352,19 +353,19 @@ create_model_func_provinces_fixed <- function(parTab, data=NULL, PRIOR_FUNC=NULL
           all_symptomatic_prevalence[indices] <- calculate_unrecovered_prevalence(onsets, prob_prerecovery)
           all_preconfirmation_prevalence[indices] <- calculate_preconfirmation_prevalence(onsets, prob_preconfirmation)
           all_cantravel_prevalence[indices] <- all_presymptomatic_prevalence[indices] + all_preconfirmation_prevalence[indices]
-          
-          
+          all_disease_prevalence[indices] <- all_presymptomatic_prevalence[indices] + all_symptomatic_prevalence[indices]
         }
         
       }
       ## Once done, combined all of the provinces into one tibble
       all_dat <- data %>% bind_cols(infections=all_infections, onsets=all_onsets, confirmations=all_confirmations,
-                                    local_infections=all_local_infections)
+                                    local_infections=all_local_infections, imported_infections=all_imported_infections)
       if(calculate_prevalence) {
         all_dat <- bind_cols(all_dat, presymptomatic_prevalence=all_presymptomatic_prevalence,
                              symptomatic_prevalence=all_symptomatic_prevalence,
                              preconfirmation_prevalence=all_preconfirmation_prevalence,
-                             cantravel_prevalence=all_cantravel_prevalence)
+                             cantravel_prevalence=all_cantravel_prevalence,
+                             disease_prevalence=all_disease_prevalence)
       }
       ## If version to solve is model, we're done. Otherwise solve likelihood for confirmations
       if(ver == "model"){
