@@ -88,6 +88,49 @@ create_incubation_prior <- function(inc_period_draws){
     prior_func
 }
 
+#' @export
+create_random_effects_rlocal <- function(parTab, province_prior="3",
+                                         r_local_mean=0.4, r_local_sd=0.05,
+                                         func_ver="norm"){
+  subset_parTab <- parTab[parTab$names == "local_r",]
+  r_index <- which(subset_parTab$province == province_prior)
+  if(func_ver == "norm"){
+    prior_func <- function(pars){
+      r_locals <- pars[which(names(pars) == "local_r")]
+      lik <- dnorm(r_locals[r_index],r_local_mean,r_local_sd,log=TRUE)
+      return(sum(lik))
+    }
+  } else {
+    gamma_pars <- gamma_pars_from_mean_sd(r_local_mean, r_local_sd^2)
+    prior_func <- function(pars){
+      r_locals <- pars[which(names(pars) == "local_r")]
+      lik <- dgamma(r_locals[r_index],gamma_pars[[1]],scale=gamma_pars[[2]],log=TRUE)
+      return(sum(lik))
+    }
+  }
+  prior_func
+}
+
+#' @export
+create_random_effects_rlocal2 <- function(parTab, r_local_mean=0.4, r_local_sd=0.05, prior_ver="gamma"){
+  gamma_pars <- gamma_pars_from_mean_sd(r_local_mean, r_local_sd^2)
+  if(prior_ver == "gamma"){
+    prior_func <- function(pars){
+      r_locals <- pars[which(names(pars) == "local_r")]
+      r_locals <- r_locals[2:length(r_locals)]
+      lik <- dgamma(r_locals,gamma_pars[[1]],scale=gamma_pars[[2]],log=TRUE)
+      return(sum(lik))
+    }
+  } else {
+    prior_func <- function(pars){
+      r_locals <- pars[which(names(pars) == "local_r")]
+      r_locals <- r_locals[2:length(r_locals)]
+      lik <- dexp(r_locals, r_local_mean,log=TRUE)
+      return(sum(lik))
+    }
+  }
+  prior_func
+}
 
 #' @export
 create_prior_startdate <- function(parTab, inc_period_draws, t0_mean, t0_sd){

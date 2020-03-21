@@ -5,7 +5,7 @@ using namespace Rcpp;
 // SYMPTOM ONSET PROBABILITIES
 /////////////////////////////////////
 //[[Rcpp::export]]
-NumericVector calculate_onset_probs(int tmax, double weibull_alpha, double weibull_sigma){
+NumericVector calculate_onset_probs_weibull(int tmax, double weibull_alpha, double weibull_sigma){
   NumericVector probs(tmax+1);
   for(int t = 0; t <= tmax; ++t){
     probs[t] = R::pweibull(t+1, weibull_alpha, weibull_sigma, true, false) - R::pweibull(t, weibull_alpha, weibull_sigma, true, false);
@@ -14,7 +14,7 @@ NumericVector calculate_onset_probs(int tmax, double weibull_alpha, double weibu
 }
 
 //[[Rcpp::export]]
-NumericVector calculate_probs_presymptomatic(int tmax, double weibull_alpha, double weibull_sigma){
+NumericVector calculate_probs_presymptomatic_weibull(int tmax, double weibull_alpha, double weibull_sigma){
   NumericVector probs(tmax+1);
   for(int t = 0; t <= tmax; ++t){
     probs[t] = 1 - R::pweibull(t, weibull_alpha, weibull_sigma, true, false);
@@ -23,10 +23,40 @@ NumericVector calculate_probs_presymptomatic(int tmax, double weibull_alpha, dou
 }
 
 //[[Rcpp::export]]
-NumericVector calculate_probs_preconfirmation(int tmax, double shape1, double shape2){
+NumericVector calculate_onset_probs_lnorm(int tmax, double par1, double par2){
+  NumericVector probs(tmax+1);
+  for(int t = 0; t <= tmax; ++t){
+    probs[t] = R::plnorm(t+1, par1, par2, true, false) - R::plnorm(t, par1, par2, true, false);
+  }
+  return(probs);
+}
+
+//[[Rcpp::export]]
+NumericVector calculate_probs_presymptomatic_lnorm(int tmax, double par1, double par2){
+  NumericVector probs(tmax+1);
+  for(int t = 0; t <= tmax; ++t){
+    probs[t] = 1 - R::plnorm(t, par1, par2, true, false);
+  }
+  return(probs);
+}
+
+//[[Rcpp::export]]
+NumericVector calculate_probs_preconfirmation(int tmax, double alpha, double scale){
   NumericVector probs(tmax + 1);
   for(int t = 0; t <= tmax; ++t){
-    probs[t] = 1 - R::pgamma(t, shape1, shape2, true, false);
+    probs[t] = 1 - R::pgamma(t, alpha, scale, true, false);
+  }
+  return(probs);
+}
+
+/////////////////////////////////////
+// RECOVERY PROBABILITIES
+/////////////////////////////////////
+//[[Rcpp::export]]
+NumericVector calculate_probs_notrecovered(int tmax, double alpha, double scale){
+  NumericVector probs(tmax + 1);
+  for(int t = 0; t <= tmax; ++t){
+    probs[t] = 1 - R::pgamma(t, alpha, scale, true, false);
   }
   return(probs);
 }
@@ -36,11 +66,11 @@ NumericVector calculate_probs_preconfirmation(int tmax, double shape1, double sh
 // LOCAL TRANSMISSION PROBABILITIES
 /////////////////////////////////////
 //[[Rcpp::export]]
-NumericVector calculate_serial_interval_probs(int tmax, double par1, double par2){
+NumericVector calculate_serial_interval_probs(int tmax, double alpha, double scale){
   NumericVector probs(tmax+1);
   for(int t = 0; t <= tmax; ++t){
 //probs[t] = R::plnorm(t+1, lnorm_mean, lnorm_sd, true, false) - R::plnorm(t, lnorm_mean, lnorm_sd, true, false);
-    probs[t] = R::pgamma(t+1, par1, par2, true, false) - R::pgamma(t, par1, par2, true, false);
+    probs[t] = R::pgamma(t+1, alpha, scale, true, false) - R::pgamma(t, alpha, scale, true, false);
   }
   return(probs);
 }
@@ -144,7 +174,7 @@ NumericVector prob_leave_pre_symptoms_vector(NumericMatrix leave_matrix,NumericV
 /////////////////////////////////////
 // For a given day (row), gives the probability of importing a case from the seed province at each day in the future (column)
 //[[Rcpp::export]]
-NumericVector prob_daily_arrival(NumericVector export_probs, NumericVector import_probs, int tmax){
+NumericMatrix prob_daily_arrival(NumericVector export_probs, NumericVector import_probs, int tmax){
   NumericMatrix res(tmax+1, tmax+1);
 
   double tmp = 1;
@@ -191,14 +221,56 @@ NumericVector prob_arrive_pre_symptoms_vector(NumericMatrix arrive_matrix, Numer
   return(rowSums(res));
 }
 
+//[[Rcpp::export]]
+NumericMatrix local_travel_matrix_precalc(NumericMatrix prob_arrival_mat){
+  int n_col = prob_arrival_mat.ncol();
+  int n_row = prob_arrival_mat.nrow();
+  NumericMatrix precalc(n_row, n_col);
+  
+  for(int t = 0; t < n_row; ++t){
+    for(int i = 0; i <= t; ++i){
+      for(int j = i; j <= t; ++j){
+        precalc(t,i) += prob_arrival_mat(i, j);
+      }
+    }
+  }
+  return(precalc);  
+}
 
 //[[Rcpp::export]]
-NumericVector calculate_infection_prevalence(NumericVector incidence, NumericVector prob_presymptomatic){
+NumericVector calculate_local_cases(NumericMatrix precalc_local, NumericVector infections, 
+                                    NumericVector serial_probs, double r_local){
+  int tmax = infections.size();
+  NumericVector local_cases(tmax);
+  for(int t = 0; t < tmax; ++t){
+    for(int i = 0; i <= t; ++i){
+      local_cases[t] += infections[i]*serial_probs[t-i]*precalc_local(t,i);
+    }
+    local_cases[t] *= r_local;
+  }
+  return(local_cases);
+}
+
+//[[Rcpp::export]]
+NumericVector calculate_infection_prevalence_local(NumericVector incidence, NumericVector prob_presymptomatic){
   int tmax = incidence.size() - 1;
   NumericVector prevalence(tmax+1);
   for(int t = 0; t <= tmax; ++t){
     for(int i = 0; i <= t; ++i) {
       prevalence[t] += incidence[i]*prob_presymptomatic[t-i];
+    }
+  }
+  return(prevalence);
+}
+
+//[[Rcpp::export]]
+NumericVector calculate_infection_prevalence_imported(NumericVector incidence, NumericVector prob_presymptomatic,
+                                                      NumericMatrix prob_have_arrived){
+  int tmax = incidence.size() - 1;
+  NumericVector prevalence(tmax+1);
+  for(int t = 0; t <= tmax; ++t){
+    for(int i = 0; i <= t; ++i) {
+      prevalence[t] += incidence[i]*prob_presymptomatic[t-i]*prob_have_arrived(t,i);
     }
   }
   return(prevalence);
@@ -217,12 +289,24 @@ NumericVector calculate_infection_prevalence_hubei(NumericVector incidence, Nume
 }
 
 //[[Rcpp::export]]
-NumericVector calculate_symptomatic_prevalence(NumericVector onsets, NumericVector prob_not_confirmed){
+NumericVector calculate_preconfirmation_prevalence(NumericVector onsets, NumericVector prob_not_confirmed){
   int tmax = onsets.size() - 1;
   NumericVector prevalence(tmax+1);
   for(int t = 0; t <= tmax; ++t){
     for(int i = 0; i <= t; ++i) {
       prevalence[t] += onsets[i]*prob_not_confirmed[t-i];
+    }
+  }
+  return(prevalence);
+}
+
+//[[Rcpp::export]]
+NumericVector calculate_unrecovered_prevalence(NumericVector onsets, NumericVector prob_not_recovered){
+  int tmax = onsets.size() - 1;
+  NumericVector prevalence(tmax+1);
+  for(int t = 0; t <= tmax; ++t){
+    for(int i = 0; i <= t; ++i) {
+      prevalence[t] += onsets[i]*prob_not_recovered[t-i];
     }
   }
   return(prevalence);
