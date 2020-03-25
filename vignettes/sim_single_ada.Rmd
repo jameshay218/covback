@@ -1,0 +1,341 @@
+---
+title: "Simulating confirmation data for a single location, and back-calculating infections and onsets"
+author: "James Hay, Ada Yan"
+date: "`r Sys.Date()`"
+output: 
+  pdf_document:
+    fig_caption: yes
+---
+
+# Introduction
+
+This vignette first demonstrates how to simulate confirmed case data from a model where cumulative prevalence follows a logistic curve.  Then it shows how the daily numbers of infections and symptom onsets, the number of infectious individuals in the community at a given time, and the number of symptomatic individuals at a given time are calculated using this model.  Last, it shows that the logistic curve parameters can be recovered from the confirmed case data.
+
+## Model
+
+Prevalence is defined as the number of infected individuals at a given time, and the cumulative prevalence is the total number of individuals who have been infected by a given time.  The cumulative prevalence is assumed to follow sigmoidal growth.  The equation for the prevalence at a given time, $y(t)$, is
+
+To do: $t < t_0$ case
+
+\begin{equation}
+y(t) = \frac{K}{1 + (K - 1) e^{-r(t - t_0)}}.
+\end{equation}
+
+The model has the following parameters:
+
+* $t_0$, the start time of the epidemic
+* $i_0$, the initial number of infected individuals
+* $K$, the final size
+* $r$, the growth rate
+
+To do: where does $i_0$ come in?
+
+$r$ can be reparameterised as
+
+\begin{equation}
+r = \frac{\log(K - 1)}{t_s}
+\end{equation}
+
+where $t_s$ is the time from the start of the epidemic to the inflection point of the sigmoidal growth curve.
+
+In our model, the incubation period follows a Weibull distribution (Backer et al. 2020); the time from symptom onset to confirmation follows a gamma distribution (Bi et al. 2020); the time from symptom onset to isolation is lognormally-distributed (Bi et al. 2020); and the time from symptom onset to recovery is ??-distributed.  The number of infectious individuals in the community at a given time is the number of individuals who are infected but not yet isolated (we assume infectiousness begins upon infection and ceases upon isolation).  The number of symptomatic individuals is the number who have experienced symptom onset but not yet recovered.
+
+## Simulate confirmations curve
+
+Load necessary packages:
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(warning=FALSE, message=FALSE)
+```
+```{r results = "hide"}
+library(grid)
+library(lazymcmc)
+library(tidyverse)
+library(ggpubr)
+library(patchwork)
+
+# setwd("~/Documents/GitHub/covback")
+# setwd("~/git_repos/covback")
+# Rcpp::compileAttributes("../")
+# devtools::document("../")
+devtools::load_all("../")
+```
+
+Load parameters and model functions to simulate data:
+
+```{r}
+parTab <- read.csv("../pars/startTab_back_calc.csv", stringsAsFactors = FALSE)
+# create_model_func_provinces creates the function used to evaluate the model for given parameters
+# note to self: rename model_ver
+f <- create_model_func_provinces_fixed(parTab, PRIOR_FUNC=prior_func, ver="model",model_ver=2, tmax = 123, incubation_ver="weibull")
+pars <- parTab$values
+parTab
+```
+
+The columns of parTab are
+
+* `values`: values of model parameters used to simulate the data
+* `names`: parameter names.  `shape` is the shape parameter for the confirmation delay distribution, `scale` is the scale parameter for the confirmation delay distribution, `weibull_alpha` is $\alpha$ for the incubation period distribution, `weibull_sigma` is $\sigma$ for the incubation period distribution, `t_switch` is the time between the start time of the epidemic and the inflection point, $K$ is the final size, $i0$ is the initial number of infected individuals and $t0$ is the start time of the epidemic.
+* `province`: this is only relevant for the multi-province case, but must nonetheless be specified for the code to work.  In the multi-province case, `shape`, `scale`, `weibull_alpha`, `weibull_sigma`, `t_switch` and `K` are common to all provinces, while `i0` and `t0` are specific to each province.  1 denotes province  number 1.
+The remaining columns are only used for inference and not simulation.  I will explain what these do later.
+
+To do: write down equations for incubation period and confirmation delay
+
+Simulate confirmation data:
+
+```{r fig.width = 5, fig.height = 3, fig.cap="\\label{fig:no_noise} Simulated number of daily new infections, onsets and confirmations with no noise."}
+sim_no_noise <- f(pars) %>% # data with no noise
+filter(var %in% c("confirmations", "infections", "onsets"))
+ggplot(sim_no_noise) + geom_line(aes(x=date,y=n,col=var))
+```
+
+Figure \ref{fig:no_noise} shows the new infections, new onsets, and new confirmations curves without noise.
+
+Add Poisson noise to the confirmation curve:
+
+```{r}
+set.seed(1)
+confirmations_noise <- sim_no_noise %>% 
+  filter(var == "confirmations") %>% 
+  mutate(x = vapply(n, function(x) rpois(1, x), numeric(1))) %>%
+  select(-var, -n) %>%
+  rename(n = x) # data with noise
+```
+
+Plot results and save:
+```{r fig.width = 5, fig.height = 3, fig.cap="\\label{fig:noise} Simulated daily new confirmations data with Poisson distributed noise."}
+ggplot(confirmations_noise) + geom_line(aes(x=date,y=n)) +
+  theme_bw() +
+  ylab("Confirmations")
+write.csv(confirmations_noise, file = "../data/simulated/sim_data.csv", row.names = FALSE)
+```
+
+Figure \ref{fig:noise} shows the data which the model will be fitted to.
+
+## Re-estimate daily number of infections
+
+We wish to see whether the model parameters can be recovered from the confirmations data.  We refit the model to the data assuming that the parameters where `parTab[,"fixed"] == 1` are fixed to the values used to generate the data, and the other parameters are fitted.  In other words, we assume that the incubation and confirmation delay distributions are known, along with the initial number of infected individuals, but not the other parameters.  Note that having the correct values of `shape`, `scale`, `weibull_alpha` and `weibull_gamma` only matters for inferring the correct infection and onset curves; if these values are wrong, the model will still fit the confirmations curve well but will predict wrong infection and onset curves.
+
+We assume a uniform distribution between `lower_bound` and `upper_bound` for each fitted parameter.
+`steps` is the initial step size of the MCMC sampler.  Because this is an adaptive implementation of the algorithm, we can leave it at the default value of 0.1.  
+
+Generate initial guess for each fitted parameter from a uniform distribution between `lower_start` and `upper_start`:
+
+```{r}
+startTab <- generate_start_tab(parTab)
+```
+
+Code to fit model to data:
+
+Code to fit a short MCMC chain:
+
+```{r}
+set.seed(1) # for reproducibility
+# set control parameters for MCMC
+# see documentation for lazymcmc for details
+# this is a short chain because we only fit three parameters -- it's an easier task
+mcmcPars_short <- c("iterations"=20000,"popt"=0.234,"opt_freq"=10,
+            "thin"=10,"adaptive_period"=10000,"save_block"=10)
+
+run_short <- function(startTab, data1, filename) {
+
+  output <- run_MCMC(parTab=startTab, data=data1, mcmcPars=mcmcPars_short, filename=filename,
+                   CREATE_POSTERIOR_FUNC=create_model_func_provinces, mvrPars=NULL,
+                   PRIOR_FUNC = NULL, OPT_TUNING=0.2,
+                   ver="posterior",model_ver=2, noise_ver="poisson")
+  invisible(output)
+}
+```
+
+Code to fit a longer MCMC chain:
+
+```{r}
+mcmcPars_long <- c("iterations"=200000,"popt"=0.234,"opt_freq"=1000,
+              "thin"=10,"adaptive_period"=100000,"save_block"=1000)
+
+run_long <- function(short_chain_filename, startTab, data1, filename) {
+  # read in short chain
+chain <- read.csv(short_chain_filename)
+## Start from best location of previous chain
+best_pars <- get_best_pars(chain)
+startTab$values <- best_pars
+# calculate covariance matrix for the samples of the last chain, after discarding the adaptive period
+# 2:(ncol(chain)-1) discards the first and last columns, which are the iteration number and log likelihood respectively
+chain <- chain[chain$sampno >= mcmcPars["adaptive_period"],2:(ncol(chain)-1)]
+covMat <- cov(chain)
+# tuning parameters for multivariate distribution -- see documentation of lazymcmc for details
+mvrPars <- list(covMat,0.5,w=0.8)
+
+## Run second chain
+# other tuning parameters for MCMC -- see documentation of lazymcmc for details
+
+output <- run_MCMC(parTab=startTab, data=data1, mcmcPars=mcmcPars_long, filename=filename,
+                   CREATE_POSTERIOR_FUNC=create_model_func_provinces, mvrPars=mvrPars,
+                   PRIOR_FUNC = prior_func, OPT_TUNING=0.2,
+                   ver="posterior", model_ver=2)
+}
+
+```
+
+The `create_model_func_provinces` creates the function used to evaluate the likelihood.  The arguments `ver`, `model_ver` and `noise_ver` are passed to `create_model_func_provinces`.  Currently supported options are:
+
+* `ver`: if `ver == "posterior"`, `create_model_func_provinces` calculates the likelihood; if `ver == "model"`, `create_model_func_provinces` calculatese model predictions.
+* `model_ver`: if `model_ver == 1`, an exponential growth model is used for the number of infections; if `model_ver == 2`, a sigmoidal function is used for the cumulative number of infections.
+* `noise_ver`: if `noise_ver == "poisson"`, observation error is assumed to be Poisson distributed.  If `noise_ver == "neg_binomial"`, observation error is assumed to be negative binomial distributed.
+
+Note that these arguments are specific to the model created by `create_model_func_provinces`.  If you write your own function to calculate a likelihood, you can include arguments with arbitrary names and pass them through in the same way.
+
+```{r eval = FALSE, results = "hide"}
+confirmations_noise <- read.csv("../data/simulated/sim_data.csv", stringsAsFactors = FALSE)
+run_short(startTab, confirmations_noise, "re_estimation")
+```
+
+The above code fits a single chain.  To be more rigorous we can fit multiple chains and check for convergence using the `gelman.diag` function in the `coda` package.
+
+Plot posteriors:
+
+```{r fig.cap="\\label{fig:posterior} Left: traceplot for model parameters. Right: Density plots.  The true value for K is 1.21e5.  The true value for t_switch is 48."}
+get_chain <- function(filename, mcmcPars) {
+  chain <- read.csv(filename)
+  chain <- chain[chain$sampno > mcmcPars["adaptive_period"],]
+  chain
+}
+chain <- get_chain("re_estimation_univariate_chain.csv", mcmcPars_short)
+plot(coda::as.mcmc(chain[,c("t_switch", "K", "lnlike")]))
+```
+
+Figure \ref{fig:posterior} shows the traceplots and posterior distributions for the fitted parameters.  The parameter values used to generate the data are recovered well, and the chains mix well.
+
+```{r fig.width = 5, fig.height = 3, fig.cap="\\label{fig:predictions} Fitted model predictions.  The coloured points how the number of simulated daily infections, onsets and confirmations without noise (plotted every 5 days).  The black dots show the number of confirmations with noise, which is the data that the model is fitted to.  The coloured lines show the fitted model predictions.  The fitted model predictions match that of the model used to simulate the data."}
+
+calc_predictions <- function(chain, parTab, data1) {
+  quants <- generate_prediction_intervals(chain, parTab, data1, NULL,
+                                        nsamp=100,return_draws = FALSE,model_ver=2,
+                                        daily_import_probs = NULL, daily_export_probs = NULL, incubation_ver="weibull") %>%
+    filter(var %in% c("infections","onsets", "confirmations"))
+  quants
+}
+plot_predictions <- function(predictions, data1) {
+  g <- ggplot(predictions) +
+        geom_ribbon(aes(x=date,ymin=lower,ymax=upper,fill=var),alpha=0.25) +
+        geom_line(aes(x=date,y=median,col=var)) +
+  geom_point(data = filter(sim_no_noise, date %% 5 == 0), aes(x = date, y = n, col = var)) +
+  geom_point(data = data1, aes(x = date, y = n)) +
+    ylab("")
+  g
+}
+
+predictions <- calc_predictions(chain, parTab, confirmations_noise)
+plot_predictions(predictions, confirmations_noise)
+```
+
+Figure \ref{fig:predictions} shows predictions of the number of new infections, the number of new symptom onsets and the number of new confirmations predicted by the fitted model (lines), versus those predicted by the parameter values used to simulate the data (dots).  The two match well.
+
+## Using a subset of the data
+
+We test whether we can recover model parameters if only pre-peak data has been collected.
+
+```{r}
+confirmations_noise_short <- confirmations_noise %>% filter(date <= 85)
+```
+```{r eval = FALSE, results = "hide"}
+run_short(startTab, confirmations_noise_short, "re_estimation_short")
+```
+
+```{r fig.cap="\\label{fig:posterior_short} Left: traceplot for model parameters. Right: Density plots.  The true value for K is 1.21e5.  The true value for t_switch is 48."}
+
+chain <- get_chain("re_estimation_short_univariate_chain.csv", mcmcPars_short)
+plot(coda::as.mcmc(chain[,c("t_switch", "K", "lnlike")]))
+```
+
+Figure \ref{fig:posterior_short} shows that parameter values can be recovered with pre-peak data only, but with more uncertainty.
+
+```{r fig.width = 5, fig.height = 3, fig.cap="\\label{fig:predictions_short} Fitted model predictions.  The coloured points how the number of simulated daily infections, onsets and confirmations without noise (plotted every 5 days).  The black dots show the number of confirmations with noise, which is the data that the model is fitted to.  The coloured lines show the fitted model predictions.  The fitted model predictions match that of the model used to simulate the data."}
+predictions_short <- calc_predictions(chain, parTab, confirmations_noise)
+plot_predictions(predictions_short, confirmations_noise_short)
+```
+
+Figure \ref{fig:predictions_short} shows predictions of the number of new infections, the number of new symptom onsets and the number of new confirmations predicted by the fitted model (lines), versus those predicted by the parameter values used to simulate the data (dots).  Even with pre-peak data, the model fits the data well. This is probably because Poisson noise is too small, and both $K$ and `t_switch` are closely related to the shape of the curve.
+
+## Putting a prior on the confirmation delay distribution parameters
+
+In the above analysis we have assumed we know the confirmation delay distribution perfectly.  If we have a strong prior on the confirmation delay distribution instead:
+
+```{r}
+parTab[grepl("weibull", parTab$names), "fixed"] <- 0
+inc_period_draws <- read.csv("../data/backer_draws.csv",stringsAsFactors=FALSE)
+prior_func <- create_prior_startdate(parTab, inc_period_draws, 37, 5)
+# note that because we are sampling over a higher-dimension parameter space,
+# here we draw 10 starting parameter values over the range of the prior distribution,
+# and take the one with the highest value of the prior
+startTabs <- lapply(seq_len(10), function(x) generate_start_tab(parTab))
+prior_values <- vapply(startTabs, function(x) prior_func(x$values), numeric(1))
+startTab <- startTabs[[which.max(prior_values)]]
+```
+```{r eval = FALSE, echo = FALSE}
+run_short(startTab, confirmations_noise, "re_estimation_prior")
+```
+
+```{r eval = FALSE, results = "hide"}
+run_long("re_estimation_prior_univariate_chain.csv",
+         startTab, confirmations_noise, "re_estimation_prior_long")
+```
+
+```{r fig.cap="\\label{fig:posterior_prior} Left: traceplot for model parameters. Right: Density plots.  The true value for K is 1.21e5.  The true value for t_switch is 48."}
+chain <- get_chain("re_estimation_prior_long_multivariate_chain.csv", mcmcPars_long)
+# plot(coda::as.mcmc(chain[,c("t_switch", "K", "lnlike")]))
+plot(coda::as.mcmc(chain[,c("weibull_alpha", "weibull_sigma")]))
+```
+
+Figure \ref{fig:posterior_prior} shows the posterior distribution for parameter values for the incubation period.  Because there is no information in the data abotu the incubation period, the posterior distribution is the same as the prior distribution.
+
+```{r fig.width = 5, fig.height = 3, fig.cap="\\label{fig:predictions_prior} Fitted model predictions.  The coloured points how the number of simulated daily infections, onsets and confirmations without noise (plotted every 5 days).  The black dots show the number of confirmations with noise, which is the data that the model is fitted to.  The coloured lines show the fitted model predictions.  The fitted model predictions match that of the model used to simulate the data."}
+
+predictions_prior <- calc_predictions(chain, parTab, confirmations_noise)
+plot_predictions(predictions_prior, confirmations_noise)
+```
+
+Figure \ref{fig:predictions_prior} shows the fitted model predictions.  We expected the predicted number of new confirmations and new symptom onsets to stay the same as when the incubation period was fixed, but the predicted number of new infections to have greater uncertainty.  The predicted number of new infections does have greater uncertainty, but not as much as expected.
+
+Plot the sampled incubation period distribution:
+
+```{r fig.width = 5, fig.height = 3, fig.cap="\\label{fig:incubation} 95% CI for the probability density function of the incubation period."}
+nsamp <- 100
+subsample <- floor(seq(1, nrow(chain), length.out = nsamp))
+weibull_alpha <- chain[subsample, "weibull_alpha"]
+weibull_sigma <- chain[subsample, "weibull_sigma"]
+tmax <- 20
+onset_probs <- Map(calculate_onset_probs_weibull, weibull_alpha, weibull_sigma, tmax = tmax) %>%
+  do.call(rbind, .) %>%
+  apply(2, quantile, probs = c(0.025, 0.975)) %>%
+  t %>%
+  as_tibble %>%
+  mutate(days = seq(0, tmax))
+ggplot(onset_probs, aes(x = days, ymin = `2.5%`, ymax = `97.5%`)) +
+  geom_ribbon() +
+  expand_limits(y = 0) +
+  theme_bw() +
+  ylab("Density")
+```
+
+The above shows the 95% credible intervals for the probability density function for the incubation period, sampled from the posterior distribution.  There is a decent amount of spread.
+
+Plot the difference between the upper and lower bounds for the 95% CI of new infections, for the case where the incubation period is fixed versus using a strong prior:
+
+```{r fig.width = 5, fig.height = 3, fig.cap="\\label{fig:diff} Difference between the upper and lower bounds for the 95% CI of new infections, for the case where the incubation period is fixed versus using a strong prior."}
+diffs <- bind_rows(list(fixed = predictions, 
+                        prior = predictions_prior), .id = "fit") %>% 
+  filter(var == "infections") %>%
+  mutate(diff = upper - lower)
+ggplot(diffs, aes(x = date, y = diff, color = fit, group = fit)) +
+  geom_line() +
+  theme_bw() +
+  expand_limits(y = 0)
+```
+
+Using a strong prior does expand the credible intervals.
+
+Possibly to do: 
+
+* Calculate isolation and recovery curves
+* Use lognormal rather than Weibull distribution
