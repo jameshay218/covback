@@ -1,0 +1,257 @@
+---
+title: "Fitting importation model to province-level data from China"
+author: "James Hay, Ada Yan"
+date: "`r Sys.Date()`"
+output: 
+  pdf_document:
+    fig_caption: yes
+---
+
+## Introduction
+
+## Model
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(warning=FALSE, message=FALSE)
+```
+
+```{r results = "hide"}
+library(grid)
+library(lazymcmc)
+library(tidyverse)
+library(ggpubr)
+library(patchwork)
+library(data.table)
+devtools::load_all("../")
+```
+
+<!-- # Ada specify day 0 -->
+<!-- tmin <- as.POSIXct("2019-11-01",format="%Y-%m-%d", tz="UTC") -->
+<!-- # Ada specify day at which inference ends -->
+<!-- tmax <- as.POSIXct("2020-03-03",format="%Y-%m-%d",tz="UTC") -->
+<!-- # Ada specify times for inference -->
+<!-- times <- seq(tmin, tmax, by="1 day") -->
+
+Create table of model parameters.
+
+The columns of `parTab` are
+
+* `values`: values of model parameters used to simulate the data
+* `names`: parameter names.  `shape` is the shape parameter for the confirmation delay distribution, `scale` is the scale parameter for the confirmation delay distribution, `lnorm_incu_par1` is the mean for the incubation period distribution on the log scale, `lnorm_incu_par2` is the standard deviation for the incubation period distribution on the log scale, `imports_stop` is the time since the start of the epidemic at which imports from Hubei to the other provinces stops, `serial_interval_gamma_alpha` is $\alpha$ for the serial interval distribution, `serial_interval_gamma_scale` is the scale parameter for the serial interval distribution, `t_switch` is the time between the start time of the epidemic and the inflection point, $K$ is the final size, `growth_rate` is the local growth rate for each province, $i0$ is the initial number of infected individuals in each province, $t0$ is the start time of the local epidemic in each province, and `local_r` is the number of secondary cases caused by each imported case.
+* `province`: if the value for `province` is `all` for a given parameter, that parameter is common to all provinces.  If the value for `province` is a number, that parameter is specific to that province number.  Provinces are numbered 1 to 28, with Hubei as province 1.
+* `lower_bound`: We assume a uniform distribution between `lower_bound` and `upper_bound` for each fitted parameter.
+* `upper_bound`: see above.
+* `steps`: the initial step size of the MCMC sampler.  Because this is an adaptive implementation of the algorithm, we can leave it at the default value of 0.1.  
+* `lower_start`: Generate initial guess for each fitted parameter from a uniform distribution between `lower_start` and `upper_start`.
+* `upper_start`: see above.
+
+
+```{r}
+startTab <- parTab <- read.csv("../pars/partab_logistic_growth.csv",stringsAsFactors=FALSE)
+```
+
+The priors for all parameters are uniform, except for on the incubation period.  We put a strong prior on the incubation period using draws from the incubation period distribuion inferred by Backer et al. (2020).
+```{r}
+inc_period_draws <- read.csv("../data/backer_draws.csv",stringsAsFactors=FALSE)
+prior_func <- create_prior_startdate(parTab, inc_period_draws, 37, 5)
+```
+
+The mobility model uses data for the probability of an individual in Hubei leaving Hubei on a given day, and the probability of a given traveller from Hubei arriving into a given province.  Load these data:
+
+```{r}
+export_probs <- read.csv("../data/export_probs_matched.csv")$export_prob
+import_probs <- read.csv("../data/import_probs_matched.csv",row.names = 1) %>% as.matrix
+```
+
+The disease dynamics model predicts the number of confirmed cases in each province.  Load these data:
+```{r}
+confirmed_data <- read_csv("../data/real/confirmed_data_matched_final.csv", col_types = "iddc") %>%
+  select(-province_name)
+# remove Hubei data (we are not using Hubei data for inference)
+confirmed_data1 <- confirmed_data %>% mutate(n=ifelse(province=="1", NA, n))
+```
+
+Fit model to data:
+
+```{r}
+set.seed(1) 
+# for reproducibility
+# set control parameters for MCMC
+# see documentation for lazymcmc for details
+mcmcPars <- c("iterations"=20000,"popt"=0.44,"opt_freq"=2000,
+              "thin"=10,"adaptive_period"=10000,"save_block"=1000)
+```
+
+The `create_model_func_provinces` function creates the function used to evaluate the likelihood.  The arguments `ver`, `model_ver` and `noise_ver` are passed to `create_model_func_provinces`.  Currently supported options are:
+
+* `ver`: if `ver == "posterior"`, `create_model_func_provinces` calculates the likelihood; if `ver == "model"`, `create_model_func_provinces` calculatese model predictions.
+* `model_ver`: if `model_ver == 1`, an exponential growth model is used for the number of infections; if `model_ver == 2`, a sigmoidal function is used for the cumulative number of infections.
+* `noise_ver`: if `noise_ver == "poisson"`, observation error is assumed to be Poisson distributed.  If `noise_ver == "neg_binomial"`, observation error is assumed to be negative binomial distributed.
+
+Note that these arguments are specific to the model created by `create_model_func_provinces`.  If you write your own function to calculate a likelihood, you can include arguments with arbitrary names and pass them through in the same way.
+
+First do an initial short MCMC run to find a good place in parameter space.  Setting `mvrPars=NULL` updates one parameter at a time (univariate proposal distribution for each parameter).  See the documentation of the `lazymcmc` package for details.
+
+```{r eval = FALSE}
+output <- run_MCMC(parTab=startTab, data=confirmed_data1, mcmcPars=mcmcPars, filename="initial_run",
+                   CREATE_POSTERIOR_FUNC=create_model_func_provinces_fixed, mvrPars=NULL,
+                   PRIOR_FUNC = prior_func, OPT_TUNING=0.2,
+                   daily_import_probs = import_probs, daily_export_probs = export_probs,
+                   ver="posterior",model_ver=2,incubation_ver="lnorm")
+```
+
+Then do a longer MCMC, using the maximum likelihood parameters from the short chain as a starting point.  This time we use a multivariate proposal distribution.  Note that `lazymcmc` builds in adaptation of the proposal distribution, but we start off by using the covariance matrix for the samples in the first chain after
+
+```{r}
+output <- list(file = "initial_run_univariate_chain.csv")
+# read in short chain
+chain <- read.csv(output$file)
+## Start from best location of previous chain
+best_pars <- get_best_pars(chain)
+startTab$values <- best_pars
+# calculate covariance matrix for the samples of the last chain, after discarding the adaptive period
+# 2:(ncol(chain)-1) discards the first and last columns, which are the iteration number and log likelihood respectively
+chain <- chain[chain$sampno >= mcmcPars["adaptive_period"],2:(ncol(chain)-1)]
+covMat <- cov(chain)
+# tuning parameters for multivariate distribution -- see documentation of lazymcmc for details
+mvrPars <- list(covMat,0.5,w=0.8)
+
+## Run second chain
+# other tuning parameters for MCMC -- see documentation of lazymcmc for details
+mcmcPars <- c("iterations"=200000,"popt"=0.234,"opt_freq"=1000,
+              "thin"=10,"adaptive_period"=100000,"save_block"=1000)
+```
+```{r eval = FALSE}
+output <- run_MCMC(parTab=startTab, data=confirmed_data1, mcmcPars=mcmcPars, filename="30_provinces",
+                   CREATE_POSTERIOR_FUNC=create_model_func_provinces_fixed, mvrPars=mvrPars,
+                   PRIOR_FUNC = prior_func, OPT_TUNING=0.2,
+                   daily_import_probs = import_probs, daily_export_probs = export_probs,
+                   ver="posterior", model_ver=2, incubation_ver="lnorm")
+```
+
+After we run the second chain, we check convergence visually.  To be more rigorous we can fit multiple chains and check for convergence using the `gelman.diag` function in the `coda` package.
+
+```{r}
+output <- list(file = "30_provinces_multivariate_chain.csv")
+chain <- read.csv(output$file)
+# plot(coda::as.mcmc(chain[,c("shape","scale","weibull_alpha","weibull_sigma","t0","K","lnlike")]))
+```
+
+Then we generate 95% credible intervals for the daily number of new infections, the daily number of new onsets and the daily number of new confirmations for each province:
+
+```{r}
+chain <- chain[chain$sampno > mcmcPars["adaptive_period"],]
+quants <- generate_prediction_intervals(chain, parTab, confirmed_data, NULL,
+                                        daily_import_probs = import_probs, daily_export_probs = export_probs,
+                                        nsamp=100,return_draws = FALSE,model_ver=2)
+quants$province <- row.names(import_probs)[quants$province]
+```
+
+Convert dates back to dates and plot: 
+```{r}
+confirmed_data2 <- confirmed_data
+
+confirmed_data2$province <- row.names(import_probs)[confirmed_data2$province]
+confirmed_data2$date <- as.Date(confirmed_data2$date, origin="2019-11-01")
+quants$date <- as.Date(quants$date, origin="2019-11-01")
+```
+
+Plot for Hubei:
+
+```{r}
+hubei_plot <- ggplot(quants[quants$province == "Hubei" & #quants$date <= "2020-01-25" & 
+                              quants$date >= "2019-12-01" &
+                              quants$var %in% c("confirmations","onsets","total_prevalence"),]) + 
+  geom_vline(xintercept=(as.Date("2020-01-23", format="%Y-%m-%d", tz="LMT", origin="2019-11-01")),linetype="dashed") +
+  geom_line(aes(x=date,y=median,col=var)) + 
+  geom_ribbon(aes(x=date,ymin=lower,ymax=upper,fill=var),alpha=0.25) +
+  scale_x_date(breaks="2 days") +
+  theme_bw() +
+  ylab("Daily prevalence") +
+  xlab("Date") +
+  theme(axis.text.x=element_text(angle=45,hjust=1),
+        legend.position=c(0.2,0.2),
+        panel.grid.minor=element_blank())
+
+hubei_plot_inset <- ggplot(quants[quants$province == "Hubei" & quants$date <= "2020-01-01" & 
+                                    quants$date >= "2019-12-01" &
+                                    quants$var %in% c("confirmations","onsets"),]) + 
+  geom_line(aes(x=date,y=median,col=var)) + 
+  geom_ribbon(aes(x=date,ymin=lower,ymax=upper,fill=var),alpha=0.25) +
+  scale_x_date(breaks="2 days") +
+  scale_y_continuous(breaks=seq(0,160,by=20)) +
+  theme_bw() +
+  xlab("") +
+  ylab("") +
+  theme(axis.text.x=element_text(angle=45,hjust=1),
+        legend.position="none", 
+        panel.grid.minor=element_blank())
+vp <- viewport(width=0.5,height=0.5, x=0.4,y=0.7)
+# png("hubei_incidence.png", height=5,width=8,res=300,units="in")
+print(hubei_plot)
+print(hubei_plot_inset, vp=vp)
+# dev.off()
+```
+
+Plot for other provinces:
+```{r}
+factor_levels <- confirmed_data2 %>% filter(province != "Hubei") %>% 
+  group_by(province) %>%
+  summarise(x=sum(n,na.rm=TRUE)) %>%
+  arrange(-x) %>% pull(province)
+
+quants <- quants[!(quants$province == "Hubei" & quants$var == "infections"),]
+quants1 <- quants[!(quants$province == "Hubei" & quants$date > "2020-01-23"),]
+quants1 <- quants1 %>% filter(province != "Hubei")
+confirmed_data2 <- confirmed_data2 %>% filter(province != "Hubei")
+
+confirmed_data2$province <- factor(confirmed_data2$province, levels=factor_levels)
+quants1$province <- factor(quants1$province, levels=factor_levels)
+
+p <- ggplot(quants1[quants1$var %in% c("infections","observations","onsets") & quants1$date >= "2020-01-01",]) +
+  geom_ribbon(aes(x=date,ymin=lower,ymax=upper,fill=var),alpha=0.25) +
+  geom_line(aes(x=date,y=median,col=var)) +
+  geom_point(data=confirmed_data2[confirmed_data2$date >= "2020-01-01",],aes(x=date,y=n),size=0.5) +
+  scale_x_date(breaks="7 days") +
+  geom_vline(xintercept=as.Date("2020-01-23",origin="2019-11-01"),linetype="dashed") +
+  theme_pubr() + 
+  theme(legend.position="none",axis.text.x=element_text(angle=45, hjust=1)) +
+  facet_wrap(~province,ncol=5,scales="free_y")
+p
+
+```
+
+Plot estimated local R:
+
+```{r}
+tmp <- chain[,colnames(chain) %like% "local_r"]
+tmp <- tmp[,2:ncol(tmp)]
+colnames(tmp) <- unique(confirmed_data2$province)
+tmp1 <- reshape2::melt(tmp)
+import_probs_melt <- reshape2::melt(import_probs)
+import_probs_melt <- import_probs_melt %>% group_by(Var1) %>% summarise(val=mean(value)) %>% filter(Var1 != "Hubei") %>% ungroup()
+colnames(import_probs_melt) <- c("variable", "Mean import probability")
+tmp1 <- tmp1 %>% left_join(import_probs_melt)
+tmp_order <- tmp1 %>% group_by(variable) %>% summarise(x=mean(value)) %>% arrange(-x) %>% pull(variable)
+tmp1$variable <- factor(tmp1$variable, levels=factor_levels)
+local_r_plot <- ggplot(tmp1) + 
+  geom_violin(aes(x=variable, y=value, fill=`Mean import probability`),
+              draw_quantiles=c(0.025,0.5,0.975),scale="width") + 
+  scale_fill_gradient(low="blue",high="red") +
+  geom_hline(yintercept=1,linetype="dashed") +
+  theme_bw() + 
+  theme(axis.text.x=element_text(angle=45,hjust=1),
+        legend.position="bottom") + 
+  ylab("Average number of local cases per import") + xlab("Province") + 
+  scale_y_continuous(expand=c(0,0),breaks=seq(0,10,by=1),limits=c(0,10))
+local_r_plot
+```
+
+Plot incubation and confirmation delay distributions:
+
+```{r eval = TRUE}
+inc_p <- plot_incubation_period(chain,nsamp=200,xmax=40, prior_pars=inc_period_draws) + ylab("Probability density") + xlab("Delay from infection to symptom onset")
+conf_p <- plot_confirm_delay(chain,nsamp=200,xmax=40) + ylab("Probability density") + xlab("Delay from symptom onset to confirmation")
+delay_plots <- inc_p / conf_p
+delay_plots
+```
