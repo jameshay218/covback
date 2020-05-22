@@ -3,6 +3,11 @@ library(ggpubr)
 library(patchwork)
 library(ggthemes)
 
+
+
+pop_wuhan <- 9785388
+n_wuhan <- 9785388
+
 export_theme <- theme_tufte() + 
   theme(
     ## Axis text and titles
@@ -83,7 +88,6 @@ all_prevalences %>%
   ungroup() %>% group_by(runname) %>% summarise(max_date=max(date),min_date=min(date))
   #select(date)
 
-n_wuhan <- 11080000
 all_prevs_comb <- do.call("rbind",all_prevs_hubei)
 all_prevs_comb %>% filter(var %in% c("Prevalence of infections eligible\n for international travel")) %>% ggplot() + 
   geom_ribbon(aes(x=date,ymin=lower/n_wuhan,ymax=upper/n_wuhan,fill=runname),alpha=0.5) +
@@ -95,8 +99,6 @@ all_prevs_comb %>% filter(var %in% c("Prevalence of infections eligible\n for in
   geom_vline(xintercept=as.Date("2020-01-23"),linetype="dashed") +
   geom_vline(xintercept=as.Date("2020-01-31"),linetype="dashed")
 
-
-pop_wuhan <- 11080000
 
 tmp_hubei <- all_prevs_comb %>% filter(date >= "2019-12-08" & 
                                          var %in% c("Prevalence of infections eligible\n for international travel") & 

@@ -55,7 +55,6 @@ generate_prediction_intervals <- function(chain, parTab, data, time_varying_conf
     
     store_all <- NULL
     for(i in seq_along(samps)){
-      print(i)
         pars <- get_index_par(chain, samps[i])
         names(pars) <- par_names
         

@@ -11,16 +11,15 @@ chain_save_wd <- "~/Documents/GitHub/covback_chains_final/final_20200522/"
 setwd("~/Documents/GitHub/covback/")
 devtools::load_all()
 #install.packages("~/Documents/GitHub/covback/",repos=NULL,type="source")
-#library(covback)
+library(covback)
 
-mcmcPars1 <- c("iterations"=2000,"popt"=0.44,"opt_freq"=1000,
-               "thin"=1,"adaptive_period"=2000,"save_block"=100)
-mcmcPars2 <- c("iterations"=2000,"popt"=0.234,"opt_freq"=1000,
-               "thin"=1,"adaptive_period"=4000,"save_block"=100)
+mcmcPars1 <- c("iterations"=100000,"popt"=0.44,"opt_freq"=1000,
+               "thin"=100,"adaptive_period"=50000,"save_block"=100)
+mcmcPars2 <- c("iterations"=350000,"popt"=0.234,"opt_freq"=1000,
+               "thin"=100,"adaptive_period"=150000,"save_block"=100)
 
 ## Table giving all scenarios with parameter settings, enumerated out for each chain number
 scenario_key <- read_csv("~/Documents/GitHub/covback/scripts/scenario_key.csv")
-scenario_key <- scenario_key %>% filter(chain_no == 1)
 
 ## Set up parallelisation
 n_clusters <- 8
@@ -106,12 +105,12 @@ res <- foreach(i=1:nrow(scenario_key),.packages=c("covback","lazymcmc","tidyvers
   
   ## Random starting locations
   startTab <- generate_start_tab(as.data.frame(parTab))
-
-    f <- create_model_func_provinces_fixed(parTab, data=confirmed_data1, PRIOR_FUNC = prior_func, daily_import_probs = import_probs, daily_export_probs = export_probs_use,
-                                           time_varying_confirm_delay_pars=time_varying_report_pars,
-                                           incubation_ver="lnorm",
-                                           noise_ver="poisson",model_ver="logistic")
-    f(parTab$values)
+  f <- create_model_func_provinces_fixed(parTab, data=confirmed_data1, PRIOR_FUNC = prior_func, daily_import_probs = import_probs, 
+                                       daily_export_probs = export_probs_use,
+                                         time_varying_confirm_delay_pars=time_varying_report_pars,
+                                         incubation_ver="lnorm",ver="model",
+                                         noise_ver="poisson",model_ver="logistic",calculate_prevalence = TRUE )
+  dat <-       f(parTab$values)
   
   ## MCMC
   ## Run first chain
