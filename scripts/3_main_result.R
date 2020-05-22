@@ -16,17 +16,17 @@ library(covback)
 #               "thin"=100,"adaptive_period"=50000,"save_block"=100)
 #mcmcPars2 <- c("iterations"=350000,"popt"=0.234,"opt_freq"=1000,
 #               "thin"=100,"adaptive_period"=150000,"save_block"=100)
-mcmcPars1 <- c("iterations"=1000,"popt"=0.44,"opt_freq"=1000,
-               "thin"=1,"adaptive_period"=5000,"save_block"=1000)
-mcmcPars2 <- c("iterations"=3500,"popt"=0.234,"opt_freq"=1000,
-               "thin"=1,"adaptive_period"=1500,"save_block"=1000)
+mcmcPars1 <- c("iterations"=80000,"popt"=0.44,"opt_freq"=1000,
+               "thin"=100,"adaptive_period"=50000,"save_block"=1000)
+mcmcPars2 <- c("iterations"=100000,"popt"=0.234,"opt_freq"=1000,
+               "thin"=100,"adaptive_period"=100000,"save_block"=1000)
 
 ## Table giving all scenarios with parameter settings, enumerated out for each chain number
 scenario_key <- read_csv("~/Documents/GitHub/covback/scripts/scenario_key.csv")
-scenario_key <- scenario_key %>% filter(chain_no == 1)
+#scenario_key <- scenario_key %>% filter(chain_no == 1)
 
 ## Set up parallelisation
-n_clusters <- 6
+n_clusters <- 16
 cl <- makeCluster(n_clusters)
 registerDoParallel(cl)
 
@@ -73,6 +73,8 @@ par_names <- parTab$names
 ####################
 res <- foreach(i=1:nrow(scenario_key),.packages=c("covback","lazymcmc","tidyverse")) %dopar% {
   setwd(chain_save_wd)
+  dir.create(scenario_key$runname[i])
+  setwd(scenario_key$runname[i])
   filename_tmp <- paste0(scenario_key$runname[i], "_",scenario_key$chain_no[i])
   
   ## Update model parameters based on scenario

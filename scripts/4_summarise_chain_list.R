@@ -42,13 +42,14 @@ cols <- ggsci::pal_npg()(10)
 setwd("~/Documents/GitHub/covback/")
 devtools::load_all()
 savewd <- "~/Google Drive/nCoV/backcalculation_paper/figures_final/"
-adaptive_period <- 300000
+adaptive_period <- 1000
 nsamp <- 25
 scale_reporting <- TRUE
 
 n_wuhan <- 9785388
 
 chain_top_wd <- "~/Documents/GitHub/covback_chains_final/main_results_final_maybe/"
+chain_top_wd <- "~/Documents/GitHub/covback_chains_final/final_20200522/"
 
 run_names <- list.files(chain_top_wd)
 scenario_key <- read_csv("~/Documents/GitHub/covback/scripts/scenario_key.csv")
@@ -89,7 +90,9 @@ for(i in seq_along(run_names)){
   filename <- paste0(filename,"/",filename)
 
     
-  chain_wd <- paste0("~/Documents/GitHub/covback_chains_final/main_results_final_maybe/",runname)
+  #chain_wd <- paste0("~/Documents/GitHub/covback_chains_final/main_results_final_maybe/",runname)
+  chain_wd <- paste0("~/Documents/GitHub/covback_chains_final/final_20200522/",runname)
+  
   parTab <- read_csv("pars/partab_logistic_growth.csv")
   parTab[parTab$names == "t0","fixed"] <- 0
   
@@ -190,7 +193,6 @@ for(i in seq_along(run_names)){
   png(paste0(savewd, "/", filename,"_convergence.png"),height=8,width=8,units="in",res=300)
   print(p_all)
   dev.off()
-  
   
   chains2 <- as.data.frame(load_mcmc_chains(chain_wd,parTab,unfixed=FALSE,thin=1,burnin=adaptive_period,multi=TRUE)[[2]])
   chains2$sampno <- 1:nrow(chains2)
@@ -497,8 +499,6 @@ runname_key <- c(
   "t_switch_3"="Analysis 9 (symptom peak 25th Jan)",
   "t_switch_4"="Analysis 10 (symptom peak 26th Jan)",
   "t_switch_5"="Analysis 11 (symptom peak 27th Jan)",
-  "t_switch_6"="Analysis 12 (symptom peak 28th Jan)",
-  "t_switch_6"="Analysis 12 (symptom peak 28th Jan)",
   "fixed_serial_int" = "Analysis 12 (fixed serial interval distribution)"
 )
 metrics_23rdJan_backup <- metrics_23rdJan
