@@ -422,6 +422,27 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// calculate_all_incidences_logistic_scale_reporting
+List calculate_all_incidences_logistic_scale_reporting(double growth_rate, double t0, double i0, double K, NumericVector import_cases, NumericVector onset_probs, NumericMatrix report_delay_mat, int tmax, int reporting_switch, double report_rate_1, double report_rate_2);
+RcppExport SEXP _covback_calculate_all_incidences_logistic_scale_reporting(SEXP growth_rateSEXP, SEXP t0SEXP, SEXP i0SEXP, SEXP KSEXP, SEXP import_casesSEXP, SEXP onset_probsSEXP, SEXP report_delay_matSEXP, SEXP tmaxSEXP, SEXP reporting_switchSEXP, SEXP report_rate_1SEXP, SEXP report_rate_2SEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< double >::type growth_rate(growth_rateSEXP);
+    Rcpp::traits::input_parameter< double >::type t0(t0SEXP);
+    Rcpp::traits::input_parameter< double >::type i0(i0SEXP);
+    Rcpp::traits::input_parameter< double >::type K(KSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type import_cases(import_casesSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type onset_probs(onset_probsSEXP);
+    Rcpp::traits::input_parameter< NumericMatrix >::type report_delay_mat(report_delay_matSEXP);
+    Rcpp::traits::input_parameter< int >::type tmax(tmaxSEXP);
+    Rcpp::traits::input_parameter< int >::type reporting_switch(reporting_switchSEXP);
+    Rcpp::traits::input_parameter< double >::type report_rate_1(report_rate_1SEXP);
+    Rcpp::traits::input_parameter< double >::type report_rate_2(report_rate_2SEXP);
+    rcpp_result_gen = Rcpp::wrap(calculate_all_incidences_logistic_scale_reporting(growth_rate, t0, i0, K, import_cases, onset_probs, report_delay_mat, tmax, reporting_switch, report_rate_1, report_rate_2));
+    return rcpp_result_gen;
+END_RCPP
+}
 // prob_not_symptomatic
 double prob_not_symptomatic(double weibull_alpha, double weibull_sigma, double t);
 RcppExport SEXP _covback_prob_not_symptomatic(SEXP weibull_alphaSEXP, SEXP weibull_sigmaSEXP, SEXP tSEXP) {
@@ -469,6 +490,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_covback_calculate_confirmation_incidence", (DL_FUNC) &_covback_calculate_confirmation_incidence, 3},
     {"_covback_calculate_all_incidences", (DL_FUNC) &_covback_calculate_all_incidences, 7},
     {"_covback_calculate_all_incidences_logistic", (DL_FUNC) &_covback_calculate_all_incidences_logistic, 8},
+    {"_covback_calculate_all_incidences_logistic_scale_reporting", (DL_FUNC) &_covback_calculate_all_incidences_logistic_scale_reporting, 11},
     {"_covback_prob_not_symptomatic", (DL_FUNC) &_covback_prob_not_symptomatic, 3},
     {NULL, NULL, 0}
 };

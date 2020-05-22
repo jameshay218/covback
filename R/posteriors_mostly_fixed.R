@@ -11,7 +11,11 @@ create_model_func_provinces_fixed <- function(parTab,
                                               incubation_ver="lnorm",
                                               model_ver="logistic", 
                                               solve_prior=FALSE, 
-                                              calculate_prevalence=FALSE){
+                                              calculate_prevalence=FALSE,
+                                              scale_reporting=FALSE,
+                                              report_rate_switch=83,
+                                              report_rate_1=0.14,
+                                              report_rate_2=0.85){
   par_names <- parTab$names
   par_provinces <- parTab$province
   unique_provinces <- unique(parTab$province)
@@ -364,20 +368,21 @@ create_model_func_provinces_fixed <- function(parTab,
           i0 <- 0
         }
         
-        
         ## Total number of cases is number of locally generated cases plus imported cases
         import_cases <- import_cases_time_of_infection + import_cases_local
+        
         ## Exponential growth model
         if(model_ver == "exp") {
-          res <- calculate_all_incidences(growth_rate, t0, i0, import_cases,
-                                          onset_probs, report_delay_mat,
-                                          tmax)
+          res <- calculate_all_incidences(growth_rate, t0, i0, import_cases,onset_probs, report_delay_mat,tmax)
           ## Logistic growth model
-        } else {          
-          res <- calculate_all_incidences_logistic(growth_rate, t0, i0, exp(pars_all["K"]),
-                                                   import_cases,
-                                                   onset_probs, report_delay_mat,
-                                                   tmax)
+        } else {   
+          if(scale_reporting & province != "1") {
+            res <- calculate_all_incidences_logistic_scale_reporting(growth_rate, t0, i0, exp(pars_all["K"]),import_cases,
+                                                                     onset_probs, report_delay_mat,tmax,report_rate_switch,report_rate_1,report_rate_2)
+          } else {
+            res <- calculate_all_incidences_logistic(growth_rate, t0, i0, exp(pars_all["K"]),import_cases,
+                                                   onset_probs, report_delay_mat,tmax)
+          }
         }
         ## Extract the 3 incidence types
         infections <- res$infections
@@ -407,17 +412,11 @@ create_model_func_provinces_fixed <- function(parTab,
             }
           }
           
-          #confirm_pars <- gamma_pars_from_mean_sd(pars["confirm_delay_mean"], pars["confirm_delay_sd"]^2)
-          #shape <- confirm_pars[[1]]
-          #scale <- confirm_pars[[2]]
-          
           shape <- pars_all["confirm_delay_shape"]
           scale <- pars_all["confirm_delay_scale"]
           
-          prob_preconfirmation  <- calculate_probs_preconfirmation(tmax, shape, 
-                                                                   scale)
-          prob_prerecovery <- calculate_probs_notrecovered(tmax, pars["recovery_shape"], 
-                                                           pars["recovery_scale"])
+          prob_preconfirmation  <- calculate_probs_preconfirmation(tmax, shape,scale)
+          prob_prerecovery <- calculate_probs_notrecovered(tmax, pars["recovery_shape"], pars["recovery_scale"])
           
           if(n_provinces > 1){
             all_presymptomatic_prevalence[indices] <- tmp_presymptomatic_prevalence_local + tmp_presymptomatic_prevalence_imported

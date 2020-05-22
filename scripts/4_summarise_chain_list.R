@@ -41,9 +41,10 @@ cols <- ggsci::pal_npg()(10)
 
 setwd("~/Documents/GitHub/covback/")
 devtools::load_all()
-savewd <- "~/Google Drive/nCoV/backcalculation_paper/figures_check/"
+savewd <- "~/Google Drive/nCoV/backcalculation_paper/figures_final/"
 adaptive_period <- 300000
-nsamp <- 1000
+nsamp <- 25
+scale_reporting <- TRUE
 
 n_wuhan <- 9785388
 
@@ -51,7 +52,6 @@ chain_top_wd <- "~/Documents/GitHub/covback_chains_final/main_results_final_mayb
 
 run_names <- list.files(chain_top_wd)
 scenario_key <- read_csv("~/Documents/GitHub/covback/scripts/scenario_key.csv")
-#scenario_key <- scenario_key[scenario_key$runname %in% run_names & scenario_key$chain_no == 1,]
 
 ## Real export probs
 export_probs <- read_csv("data/export_probs_matched.csv")$export_prob
@@ -207,7 +207,8 @@ for(i in seq_along(run_names)){
                                                   daily_import_probs = import_probs, daily_export_probs = export_probs_use,
                                                   time_varying_confirm_delay_pars = time_varying_report_pars,
                                                   nsamp=nsamp,return_draws = FALSE,model_ver="logistic",noise_ver="poisson",
-                                                  incubation_ver="lnorm")
+                                                  incubation_ver="lnorm",scale_reporting=FALSE, 
+                                                  report_rate_switch=83,report_rate_1=0.14,report_rate_2=0.65)
   print("... done")
   quants_summary$date <- as.Date(quants_summary$date, origin="2019-11-01")
   quants_summary$province <- provinces[quants_summary$province]
@@ -379,7 +380,8 @@ for(i in seq_along(run_names)){
                                                   daily_import_probs = import_probs, daily_export_probs = export_probs_use,
                                                   time_varying_confirm_delay_pars = time_varying_report_pars,
                                                   nsamp=nsamp,return_draws = TRUE,model_ver="logistic",noise_ver="poisson",
-                                                  incubation_ver="lnorm")
+                                                  incubation_ver="lnorm",scale_reporting=scale_reporting, 
+                                          report_rate_switch=83,report_rate_1=0.14,report_rate_2=0.65)
 
   quants <- quants$draws
   quants$province <- provinces[quants$province]

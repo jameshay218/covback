@@ -184,6 +184,31 @@ List calculate_all_incidences_logistic(double growth_rate, double t0, double i0,
   return(res);
 }
 
+//[[Rcpp::export]]
+List calculate_all_incidences_logistic_scale_reporting(double growth_rate, double t0, double i0,
+                                       double K,
+                                       NumericVector import_cases,
+                                       NumericVector onset_probs, NumericMatrix report_delay_mat,
+                                       int tmax, int reporting_switch, double report_rate_1, double report_rate_2){
+  NumericVector infections;
+  
+  if(i0 > 0){
+    infections = daily_sigmoid_interval_cpp(growth_rate, K, tmax, t0);
+    infections = infections + import_cases;
+  } else {
+    infections = import_cases;
+  }
+  infections[Range(0,reporting_switch)] = infections[Range(0,reporting_switch)]/report_rate_1;
+  infections[Range(reporting_switch+1,infections.size())] = infections[Range(reporting_switch+1,infections.size())]/report_rate_2;
+  
+  
+  NumericVector onsets = calculate_onset_incidence(infections, onset_probs, tmax);
+  NumericVector confirmations = calculate_confirmation_incidence(onsets, tmax, report_delay_mat);
+  
+  List res = List::create(Named("infections")=infections,Named("onsets")=onsets,Named("confirmations")=confirmations);
+  return(res);
+}
+
 
 
 

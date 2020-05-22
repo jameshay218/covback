@@ -10,7 +10,7 @@ values,names,province,fixed,lower_bound,upper_bound,steps,lower_start,upper_star
 7.2,serial_interval_var,all,0,0,100,0.1,5,7
 9.18,recovery_shape,all,1,0,10,0.1,0,10
 2.46,recovery_scale,all,1,0,10,0.1,0,10
-86,t_switch,all,1,84,90,0.1,84,90
+86,t_switch,all,1,83,90,0.1,83,90
 5,incu_mode,all,1,0,10,0.1,0,10
 100000,K,all,0,66773,9785388,1,100000,300000
 1,local_r_mean,all,1,0,100,0.1,0,10

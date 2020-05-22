@@ -131,6 +131,10 @@ calculate_all_incidences_logistic <- function(growth_rate, t0, i0, K, import_cas
     .Call('_covback_calculate_all_incidences_logistic', PACKAGE = 'covback', growth_rate, t0, i0, K, import_cases, onset_probs, report_delay_mat, tmax)
 }
 
+calculate_all_incidences_logistic_scale_reporting <- function(growth_rate, t0, i0, K, import_cases, onset_probs, report_delay_mat, tmax, reporting_switch, report_rate_1, report_rate_2) {
+    .Call('_covback_calculate_all_incidences_logistic_scale_reporting', PACKAGE = 'covback', growth_rate, t0, i0, K, import_cases, onset_probs, report_delay_mat, tmax, reporting_switch, report_rate_1, report_rate_2)
+}
+
 prob_not_symptomatic <- function(weibull_alpha, weibull_sigma, t) {
     .Call('_covback_prob_not_symptomatic', PACKAGE = 'covback', weibull_alpha, weibull_sigma, t)
 }

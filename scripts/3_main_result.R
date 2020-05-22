@@ -9,9 +9,7 @@ chain_save_wd <- "~/Documents/GitHub/covback_chains_final/final_20200522/"
 
 ## Either load package locally or install from github
 setwd("~/Documents/GitHub/covback/")
-#devtools::load_all()
-
-install.packages("~/Documents/GitHub/covback/",repos=NULL,type="source")
+#install.packages("~/Documents/GitHub/covback/",repos=NULL,type="source")
 library(covback)
 
 #mcmcPars1 <- c("iterations"=100000,"popt"=0.44,"opt_freq"=1000,
@@ -115,9 +113,9 @@ res <- foreach(i=1:nrow(scenario_key),.packages=c("covback","lazymcmc","tidyvers
                                        daily_export_probs = export_probs_use,
                                          time_varying_confirm_delay_pars=time_varying_report_pars,
                                          incubation_ver="lnorm",ver="model",
-                                         noise_ver="poisson",model_ver="logistic",calculate_prevalence = TRUE )
-  dat <-       f(parTab$values)
-  
+                                         noise_ver="poisson",model_ver="logistic",calculate_prevalence = TRUE,scale_reporting = FALSE)
+  dat <- f(parTab$values)
+
   ## MCMC
   ## Run first chain
   output <- run_MCMC(parTab=startTab, data=confirmed_data1, mcmcPars=mcmcPars1, filename=filename_tmp,
