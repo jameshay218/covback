@@ -71,9 +71,6 @@ create_model_func_provinces_fixed <- function(parTab,
   if(all(parTab[parTab$names %in% c("confirm_delay_shape","confirm_delay_scale"),"fixed"] == 1)){
     recalc_confirm_delay <- FALSE
     
-    #confirm_pars <- gamma_pars_from_mean_sd(pars_all["confirm_delay_mean"], pars_all["confirm_delay_sd"]^2)
-    #shape <- confirm_pars[[1]]
-    #scale <- confirm_pars[[2]]
     shape <- pars_all["confirm_delay_shape"]
     scale <- pars_all["confirm_delay_scale"]
         
@@ -125,15 +122,16 @@ create_model_func_provinces_fixed <- function(parTab,
   ##############################################################
   ## If not re-estimating serial interval parameters, calculate the serial interval here
   recalc_serial_interval <- TRUE
-  if(all(parTab[parTab$names %in% c("serial_interval_mean","serial_interval_sd"),"fixed"] == 1)){
+  if(all(parTab[parTab$names %in% c("serial_interval_mean","serial_interval_var"),"fixed"] == 1)){
     recalc_serial_interval <- FALSE
     ## Serial interval
-    serial_pars <- gamma_pars_from_mean_sd(pars_all["serial_interval_mean"], pars_all["serial_interval_sd"]^2)
+    serial_pars <- gamma_pars_from_mean_sd(pars_all["serial_interval_mean"], pars_all["serial_interval_var"])
     
     serial_interval_alpha <- serial_pars[[1]]
     serial_interval_scale <- serial_pars[[2]]
     
     serial_probs <- calculate_serial_interval_probs(tmax, serial_interval_alpha, serial_interval_scale)
+   
   }
 
   model_func <- function(pars_all) {
@@ -152,9 +150,6 @@ create_model_func_provinces_fixed <- function(parTab,
       ###########################################################
       if(recalc_confirm_delay){
       ## Gamma distribution
-        #confirm_pars <- gamma_pars_from_mean_sd(pars_all["confirm_delay_mean"], pars_all["confirm_delay_sd"]^2)
-        #shape <- confirm_pars[[1]]
-        #scale <- confirm_pars[[2]]
         
         shape <- pars_all["confirm_delay_shape"]
         scale <- pars_all["confirm_delay_scale"]
@@ -192,14 +187,13 @@ create_model_func_provinces_fixed <- function(parTab,
       ###########################################################
       if(recalc_serial_interval){
         ## Serial interval
-        serial_pars <- gamma_pars_from_mean_sd(pars_all["serial_interval_mean"], pars_all["serial_interval_sd"]^2)
+        serial_pars <- gamma_pars_from_mean_sd(pars_all["serial_interval_mean"], pars_all["serial_interval_var"])
         
         serial_interval_alpha <- serial_pars[[1]]
         serial_interval_scale <- serial_pars[[2]]
         
         serial_probs <- calculate_serial_interval_probs(tmax, serial_interval_alpha, serial_interval_scale)
       }
-      
       ###########################################################
       ## iv) get probability of leaving pre-symptoms, given travel data
       ###########################################################
@@ -221,6 +215,7 @@ create_model_func_provinces_fixed <- function(parTab,
       if(model_ver == "logistic" & 
          parTab[parTab$names == "growth_rate" & 
                 parTab$province == "1","fixed"] == 1){
+        ## Transform back to linear scale
         K <- exp(pars_all["K"])
         
         ## Peak symptom onsets t_switch_onsets days after seeding
@@ -430,7 +425,12 @@ create_model_func_provinces_fixed <- function(parTab,
             all_presymptomatic_prevalence[indices] <- 0
           }
           all_symptomatic_prevalence[indices] <- calculate_unrecovered_prevalence(onsets, prob_prerecovery)
-          all_preconfirmation_prevalence[indices] <- calculate_preconfirmation_prevalence(onsets, prob_preconfirmation)
+          
+          if(!is.null(time_varying_confirm_delay_pars)){
+            all_preconfirmation_prevalence[indices] <- calculate_preconfirmation_prevalence(onsets, prob_preconfirmation)
+          } else {
+            all_preconfirmation_prevalence[indices] <- calculate_preconfirmation_prevalence_vector(onsets, time_varying_confirm_delay_pars$shape, time_varying_confirm_delay_pars$scale)
+          }
           all_cantravel_prevalence[indices] <- all_presymptomatic_prevalence[indices] + all_preconfirmation_prevalence[indices]
           all_disease_prevalence[indices] <- all_presymptomatic_prevalence[indices] + all_symptomatic_prevalence[indices]
         }
@@ -460,7 +460,7 @@ create_model_func_provinces_fixed <- function(parTab,
         if (!is.null(PRIOR_FUNC)) {
           lik <- lik + PRIOR_FUNC(pars_all)
         }
-        return(lik + dunif(t_switch,84,90,log=TRUE))
+        return(lik)
       }
     } else {
       lik <- -100000

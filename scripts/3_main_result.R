@@ -5,27 +5,30 @@ library(ggpubr)
 library(patchwork)
 library(doParallel)
 
+chain_save_wd <- "~/Documents/GitHub/covback_chains_final/final_20200522/"
+
 ## Either load package locally or install from github
 setwd("~/Documents/GitHub/covback/")
 devtools::load_all()
 #install.packages("~/Documents/GitHub/covback/",repos=NULL,type="source")
 #library(covback)
 
-mcmcPars1 <- c("iterations"=100000,"popt"=0.44,"opt_freq"=1000,
-               "thin"=100,"adaptive_period"=200000,"save_block"=100)
-mcmcPars2 <- c("iterations"=200000,"popt"=0.234,"opt_freq"=1000,
-               "thin"=100,"adaptive_period"=400000,"save_block"=100)
+mcmcPars1 <- c("iterations"=2000,"popt"=0.44,"opt_freq"=1000,
+               "thin"=1,"adaptive_period"=2000,"save_block"=100)
+mcmcPars2 <- c("iterations"=2000,"popt"=0.234,"opt_freq"=1000,
+               "thin"=1,"adaptive_period"=4000,"save_block"=100)
 
 ## Table giving all scenarios with parameter settings, enumerated out for each chain number
-scenario_key <- read_csv("~/Documents/GitHub/covback/scripts/scenarios/scenario_key.csv")
-scenario_key <- scenario_key[scenario_key$runname %in% c("diffuse_r_local","fewer_travellers","early_seed") & scenario_key$chain_no %in% c(3),]
+scenario_key <- read_csv("~/Documents/GitHub/covback/scripts/scenario_key.csv")
+scenario_key <- scenario_key %>% filter(chain_no == 1)
 
 ## Set up parallelisation
-n_clusters <- 4
+n_clusters <- 8
 cl <- makeCluster(n_clusters)
 registerDoParallel(cl)
 
 ## Timeframe of model fitting
+## Day 0 is 2019-11-01
 tmin <- as.POSIXct("2019-11-01",format="%Y-%m-%d", tz="UTC")
 tmax <- as.POSIXct("2020-03-03",format="%Y-%m-%d",tz="UTC")
 times <- seq(tmin, tmax, by="1 day")
@@ -47,11 +50,12 @@ parTab[parTab$names == "K","lower_bound"] <- log(parTab[parTab$names == "K","low
 parTab[parTab$names == "K","lower_start"] <- log(parTab[parTab$names == "K","lower_start"])
 parTab[parTab$names == "K","upper_start"] <- log(parTab[parTab$names == "K","upper_start"])
 
-## Table giving 
+## Table giving confirmation delay distribution as it changes over time, as per Zhang et al. 2020
 time_varying_report_pars <- data.frame(date=as.Date(times,origin="2019-11-01"),shape=3.18,scale=1/0.59)
 time_varying_report_pars[time_varying_report_pars$date <= as.Date("2020-01-27",origin="2019-11-01"),"shape"] <- 3.72
 time_varying_report_pars[time_varying_report_pars$date <= as.Date("2020-01-27",origin="2019-11-01"),"scale"] <- 1/0.42
 
+## Confirmed case data
 confirmed_data1 <- as.data.frame(read_csv("data/real/midas_data_final.csv"))
 confirmed_data1 <- confirmed_data1 %>% select(-province_raw)
 confirmed_data1 <- confirmed_data1 %>% mutate(n=ifelse(province==1, NA, n))
@@ -61,32 +65,11 @@ subset_parTab <- parTab[parTab$names == "local_r",]
 r_index <- which(subset_parTab$province != "1")
 par_names <- parTab$names
 
-parTab[parTab$names == "t_switch","fixed"] <- 0
-parTab[parTab$names == "growth_rate" & parTab$province == 1,"fixed"] <- 0
-
 ####################
-## NOT USED
+## RUN MCMC
 ####################
-## Create priors on delay distribution parameters
-# prior_table <- read.csv("pars/prior_quantiles.csv",stringsAsFactors = FALSE)
-# prior_sds <- find_all_prior_sds(prior_table)
-# 
-# prior_func_delays <- function(pars){
-#   serial_pars <- gamma_pars_from_mean_sd(pars["serial_interval_mean"],pars["serial_interval_sd"]^2)
-#   serial_interval_1 <- dnorm(serial_pars[[1]], prior_table$mean[1], prior_sds[1], 1)
-#   serial_interval_2 <- dnorm(1/serial_pars[[2]], prior_table$mean[2], prior_sds[2], 1)
-#   
-#   incubation_period_1 <- dnorm(pars["lnorm_incu_par1"], prior_table$mean[3], prior_sds[3], 1)
-#   incubation_period_2 <- dnorm(pars["lnorm_incu_par2"], prior_table$mean[4], prior_sds[4], 1)
-#   
-#   return(serial_interval_1 + serial_interval_2 + incubation_period_1 + incubation_period_2)
-# }
-# pars <- parTab$values
-# names(pars) <- parTab$names
-# prior_func_delays(pars)
-
 res <- foreach(i=1:nrow(scenario_key),.packages=c("covback","lazymcmc","tidyverse")) %dopar% {
-  setwd("../covback_chains_final/main_results_final_maybe")
+  setwd(chain_save_wd)
   filename_tmp <- paste0(scenario_key$runname[i], "_",scenario_key$chain_no[i])
   
   ## Update model parameters based on scenario
@@ -95,6 +78,7 @@ res <- foreach(i=1:nrow(scenario_key),.packages=c("covback","lazymcmc","tidyvers
   parTab[parTab$names == "local_r_sd","values"] <- scenario_key$r_local_sd[i]
   parTab[parTab$names == "t_switch","fixed"] <- scenario_key$t_switch_fixed[i]
   parTab[parTab$names == "t_switch","values"] <- scenario_key$t_switch_val[i]
+  parTab[parTab$names %in% c("serial_interval_mean","serial_interval_var"),"fixed"] <- scenario_key$serial_interval_fixed[i]
   
   ## Hyperprior on R_local parameters
   prior_func_rlocal <- function(pars){
@@ -123,6 +107,12 @@ res <- foreach(i=1:nrow(scenario_key),.packages=c("covback","lazymcmc","tidyvers
   ## Random starting locations
   startTab <- generate_start_tab(as.data.frame(parTab))
 
+    f <- create_model_func_provinces_fixed(parTab, data=confirmed_data1, PRIOR_FUNC = prior_func, daily_import_probs = import_probs, daily_export_probs = export_probs_use,
+                                           time_varying_confirm_delay_pars=time_varying_report_pars,
+                                           incubation_ver="lnorm",
+                                           noise_ver="poisson",model_ver="logistic")
+    f(parTab$values)
+  
   ## MCMC
   ## Run first chain
   output <- run_MCMC(parTab=startTab, data=confirmed_data1, mcmcPars=mcmcPars1, filename=filename_tmp,
@@ -139,7 +129,7 @@ res <- foreach(i=1:nrow(scenario_key),.packages=c("covback","lazymcmc","tidyvers
   
   ## Check convergence
   pdf(paste0(filename_tmp,"_chain.pdf"))
-  plot(coda::as.mcmc(chain[,c("serial_interval_mean","serial_interval_sd","t0","K","local_r","lnlike")]))
+  plot(coda::as.mcmc(chain[,c("serial_interval_mean","serial_interval_var","t0","K","local_r","lnlike")]))
   dev.off()
   
   best_pars <- get_best_pars(chain)
@@ -163,6 +153,6 @@ res <- foreach(i=1:nrow(scenario_key),.packages=c("covback","lazymcmc","tidyvers
   ## Check convergence
   chain <- read.csv(output$file)
   pdf(paste0(filename_tmp,"_chain.pdf"))
-  plot(coda::as.mcmc(chain[,c("serial_interval_mean","serial_interval_sd","t0","K","local_r","lnlike")]))
+  plot(coda::as.mcmc(chain[,c("serial_interval_mean","serial_interval_var","t0","K","local_r","lnlike")]))
   dev.off()
 }

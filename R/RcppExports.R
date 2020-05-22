@@ -81,6 +81,10 @@ calculate_infection_prevalence_hubei <- function(incidence, prob_presymptomatic,
     .Call('_covback_calculate_infection_prevalence_hubei', PACKAGE = 'covback', incidence, prob_presymptomatic, probs_not_left_by_day)
 }
 
+calculate_preconfirmation_prevalence_vector <- function(onsets, alphas, scales) {
+    .Call('_covback_calculate_preconfirmation_prevalence_vector', PACKAGE = 'covback', onsets, alphas, scales)
+}
+
 calculate_preconfirmation_prevalence <- function(onsets, prob_not_confirmed) {
     .Call('_covback_calculate_preconfirmation_prevalence', PACKAGE = 'covback', onsets, prob_not_confirmed)
 }

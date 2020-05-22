@@ -6,13 +6,13 @@ values,names,province,fixed,lower_bound,upper_bound,steps,lower_start,upper_star
 7.26,weibull_sigma,all,1,0,10000,0.1,6,7
 1.621,lnorm_incu_par1,all,1,0,10000,0.1,1,2
 0.418,lnorm_incu_par2,all,1,0,10000,0.1,0.4,0.5
-6.36,serial_interval_mean,all,0,0,100,0.1,5,7
-4.2,serial_interval_sd,all,0,0,10,0.1,2,5
+5.11,serial_interval_mean,all,0,0,100,0.1,5,7
+7.2,serial_interval_var,all,0,0,100,0.1,5,7
 9.18,recovery_shape,all,1,0,10,0.1,0,10
 2.46,recovery_scale,all,1,0,10,0.1,0,10
 86,t_switch,all,1,84,90,0.1,84,90
 5,incu_mode,all,1,0,10,0.1,0,10
-100000,K,all,0,66773,11080000,1,100000,300000
+100000,K,all,0,66773,9785388,1,100000,300000
 1,local_r_mean,all,1,0,100,0.1,0,10
 0.25,local_r_sd,all,1,0,100,0.1,0,10
 0.25,growth_rate,1,1,0,0.5,0.1,0.15,0.25

@@ -49,6 +49,7 @@ NumericVector calculate_probs_preconfirmation(int tmax, double alpha, double sca
   return(probs);
 }
 
+
 /////////////////////////////////////
 // RECOVERY PROBABILITIES
 /////////////////////////////////////
@@ -237,12 +238,20 @@ NumericMatrix local_travel_matrix_precalc(NumericMatrix prob_arrival_mat){
   return(precalc);  
 }
 
+/////////////////////////////////////
+// LOCAL TRANSMISSION
+/////////////////////////////////////
 //[[Rcpp::export]]
 NumericVector calculate_local_cases(NumericMatrix precalc_local, NumericVector infections, 
                                     NumericVector serial_probs, double r_local){
   int tmax = infections.size();
   NumericVector local_cases(tmax);
+  // For all times
   for(int t = 0; t < tmax; ++t){
+    // Sum up infections that were generated on each day in the past,
+    // find the expected number of secondary cases that they generate. 
+    // This is the serial interval distribution multiplied by the probability that
+    // they are in that location on that day post infection
     for(int i = 0; i <= t; ++i){
       local_cases[t] += infections[i]*serial_probs[t-i]*precalc_local(t,i);
     }
@@ -250,6 +259,11 @@ NumericVector calculate_local_cases(NumericMatrix precalc_local, NumericVector i
   }
   return(local_cases);
 }
+
+
+/////////////////////////////////////
+// PREVALENCE
+/////////////////////////////////////
 
 //[[Rcpp::export]]
 NumericVector calculate_infection_prevalence_local(NumericVector incidence, NumericVector prob_presymptomatic){
@@ -283,6 +297,19 @@ NumericVector calculate_infection_prevalence_hubei(NumericVector incidence, Nume
   for(int t = 0; t <= tmax; ++t){
     for(int i = 0; i <= t; ++i) {
       prevalence[t] += incidence[i]*prob_presymptomatic[t-i]*probs_not_left_by_day(i,t);
+    }
+  }
+  return(prevalence);
+}
+
+//[[Rcpp::export]]
+NumericVector calculate_preconfirmation_prevalence_vector(NumericVector onsets, NumericVector alphas, NumericVector scales){
+  int tmax = onsets.size() - 1;
+  NumericVector prevalence(tmax+1);
+  for(int t = 0; t <= tmax; ++t){
+    for(int i = 0; i <= t; ++i) {
+      // Confirmation delay uses the parameters from the day of onset
+      prevalence[t] += onsets[i]*(1.0 - R::pgamma(t-i, alphas[i], scales[i], true, false));
     }
   }
   return(prevalence);

@@ -255,6 +255,19 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// calculate_preconfirmation_prevalence_vector
+NumericVector calculate_preconfirmation_prevalence_vector(NumericVector onsets, NumericVector alphas, NumericVector scales);
+RcppExport SEXP _covback_calculate_preconfirmation_prevalence_vector(SEXP onsetsSEXP, SEXP alphasSEXP, SEXP scalesSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericVector >::type onsets(onsetsSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type alphas(alphasSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type scales(scalesSEXP);
+    rcpp_result_gen = Rcpp::wrap(calculate_preconfirmation_prevalence_vector(onsets, alphas, scales));
+    return rcpp_result_gen;
+END_RCPP
+}
 // calculate_preconfirmation_prevalence
 NumericVector calculate_preconfirmation_prevalence(NumericVector onsets, NumericVector prob_not_confirmed);
 RcppExport SEXP _covback_calculate_preconfirmation_prevalence(SEXP onsetsSEXP, SEXP prob_not_confirmedSEXP) {
@@ -444,6 +457,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_covback_calculate_infection_prevalence_local", (DL_FUNC) &_covback_calculate_infection_prevalence_local, 2},
     {"_covback_calculate_infection_prevalence_imported", (DL_FUNC) &_covback_calculate_infection_prevalence_imported, 3},
     {"_covback_calculate_infection_prevalence_hubei", (DL_FUNC) &_covback_calculate_infection_prevalence_hubei, 3},
+    {"_covback_calculate_preconfirmation_prevalence_vector", (DL_FUNC) &_covback_calculate_preconfirmation_prevalence_vector, 3},
     {"_covback_calculate_preconfirmation_prevalence", (DL_FUNC) &_covback_calculate_preconfirmation_prevalence, 2},
     {"_covback_calculate_unrecovered_prevalence", (DL_FUNC) &_covback_calculate_unrecovered_prevalence, 2},
     {"_covback_daily_sigmoid_interval_cpp", (DL_FUNC) &_covback_daily_sigmoid_interval_cpp, 4},

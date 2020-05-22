@@ -4,8 +4,13 @@ devtools::load_all()
 travel_probs <- read_csv("data/raw/extracted_import_proportions.csv")
 province_key <- read_csv("data/raw/extracted_data_key.csv")
 
+## Change to 4000000 for scenario
 total_travellers <- 5000000
-wuhan_pop_ini <- 11080000
+wuhan_pop_ini <- 9785388
+
+## Change to 2020-01-23 for scenario
+index_date_end <- as.POSIXct("2020-01-25", 
+           format = "%Y-%m-%d", tz = "UTC")
 
 tmin <- as.POSIXct("2019-11-01",format="%Y-%m-%d", tz="UTC")
 tmax <- as.POSIXct("2020-03-03",format="%Y-%m-%d",tz="UTC")
@@ -49,12 +54,13 @@ import_probs <- travel_probs %>% bind_rows(travel_probs_hubei) %>%
 export_prob_dat <- read_csv("data/raw/export_probs_raw.csv")
 #export_prob_dat$frac_leave_hubei <- export_prob_dat$x
 export_prob_dat$Date <- as.POSIXct(export_prob_dat$Date,format="%m/%d/%Y",tz="UTC")
+
 export_probs <- create_export_prob_matrix(total_travellers, wuhan_pop_ini, export_prob_dat, tmin, tmax,
-                                          index_date_end=as.POSIXct("2020-01-23", 
-                                                                    format = "%Y-%m-%d", tz = "UTC"))
+                                          index_date_end=index_date_end)
 
 times <- seq(tmin, tmax, by="1 day")
 export_probs_final <- tibble(date=times,export_prob=export_probs$probs)
 
-write_csv(export_probs_final, "export_probs_lower.csv")
-write_csv(import_probs, "import_probs.csv")
+write_csv(export_probs_final, "data/export_probs_matched.csv")
+#write_csv(export_probs_final, "data/export_probs_lower.csv")
+write_csv(import_probs, "data/import_probs.csv")

@@ -10,7 +10,7 @@ all_dats <- NULL
 ## Only want to store province name and number of new diagnoses
 subset_cols <- c("province","New diagnosis")
 
-## REad in each file
+## Read in each file
 for(file in files){
   tmp_dat <- read_csv(file)
   
@@ -38,16 +38,17 @@ confirmed_dat1$date <- as.Date(confirmed_dat1$date, origin="2019-11-01")
 confirmed_dat1 <- confirmed_dat1 %>% select(province_name, date,n)
 colnames(confirmed_dat1)[1] <- "province"
 
-#all_dat %>% ggplot() + geom_line(aes(x=date, y=n)) + 
-#  geom_point(data=confirmed_dat1,aes(x=date,y=n),col="red") + facet_wrap(~province,scales="free_y")
+all_dat %>% ggplot() + geom_line(aes(x=date, y=n)) + 
+  geom_point(data=confirmed_dat1,aes(x=date,y=n),col="red") + facet_wrap(~province,scales="free_y")
 
-## Only want province I'm using
+## Only want provinces we're using
 all_dat <- all_dat %>% filter(all_dat$province %in% unique(confirmed_dat1$province))
 
 ## Change factor levels and reorder by total number of cases
 all_dat$province <- factor(all_dat$province, levels=unique(confirmed_dat1$province))
 all_dat <- all_dat %>% select(date, province, n)
 colnames(all_dat)[2] <- "province_raw"
+
 ## Remove Shandong after 19th Feb as big spike
 all_dat <- all_dat %>% mutate(n = ifelse(province_raw == "Shandong" & date > "2020-02-19",NA, n))
 
