@@ -10,7 +10,7 @@ t_switch_onsets <- 50
 ts <- 0:2000
 
 ## Real export probs
-export_probs <- read_csv("data/export_probs_matched.csv")$x
+export_probs <- read_csv("data/export_probs_matched.csv")$export_prob
 ## Real import probs
 import_probs <- read_csv("data/import_probs_matched.csv")
 import_probs <- as.matrix(import_probs[,2:ncol(import_probs)])

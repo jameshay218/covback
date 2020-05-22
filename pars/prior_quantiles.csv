@@ -1,0 +1,5 @@
+mean,model,lower_quantile,upper_quantile,upper_bound_sd
+2.29,norm,1.77,3.34,2
+0.36,norm,0.26,0.57,2
+1.621,norm,1.504,1.755,2
+0.418,norm,0.271,0.542,2

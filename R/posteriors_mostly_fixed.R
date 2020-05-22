@@ -1,20 +1,25 @@
 #' @export
-create_model_func_provinces_fixed <- function(parTab, data=NULL, PRIOR_FUNC=NULL,
-                                        tmax=NULL, time_varying_confirm_delay_pars=NULL,
-                                        daily_import_probs=NULL, daily_export_probs=NULL,
-                                        ver="posterior", noise_ver="poisson",incubation_ver="lnorm",
-                                        model_ver=1, 
-                                        solve_prior=FALSE, calculate_prevalence=FALSE){
+create_model_func_provinces_fixed <- function(parTab, 
+                                              data=NULL, 
+                                              PRIOR_FUNC=NULL,
+                                              tmax=NULL, 
+                                              time_varying_confirm_delay_pars=NULL,
+                                              daily_import_probs=NULL, 
+                                              daily_export_probs=NULL,
+                                              ver="posterior", 
+                                              noise_ver="poisson",
+                                              incubation_ver="lnorm",
+                                              model_ver="logistic", 
+                                              solve_prior=FALSE, 
+                                              calculate_prevalence=FALSE){
   par_names <- parTab$names
   par_provinces <- parTab$province
   unique_provinces <- unique(parTab$province)
   pars_all <- parTab$values
   names(pars_all) <- par_names
-  
   ## Start from last province
   unique_provinces <- unique_provinces[unique_provinces != "all"]
   n_provinces <- length(unique_provinces)
-  
   ##############################################################
   ## i) SETUP DATA
   ##############################################################
@@ -22,6 +27,7 @@ create_model_func_provinces_fixed <- function(parTab, data=NULL, PRIOR_FUNC=NULL
   if (!is.null(data)) {
     data <- data %>% arrange(province, date)
     times <- data %>% filter(province == "1") %>% pull(date)
+    times_date <- as.Date(times, origin="2019-11-01")
     cases <- data$n
     bigT <- length(times)
     tmax <- max(times)
@@ -64,9 +70,13 @@ create_model_func_provinces_fixed <- function(parTab, data=NULL, PRIOR_FUNC=NULL
   recalc_confirm_delay <- TRUE
   if(all(parTab[parTab$names %in% c("confirm_delay_shape","confirm_delay_scale"),"fixed"] == 1)){
     recalc_confirm_delay <- FALSE
+    
+    #confirm_pars <- gamma_pars_from_mean_sd(pars_all["confirm_delay_mean"], pars_all["confirm_delay_sd"]^2)
+    #shape <- confirm_pars[[1]]
+    #scale <- confirm_pars[[2]]
     shape <- pars_all["confirm_delay_shape"]
     scale <- pars_all["confirm_delay_scale"]
-    
+        
     ## If time-varying parameters not specified, enumerate out the point estimates
     if (is.null(time_varying_confirm_delay_pars)) {
       report_delay_mat <- calculate_reporting_delay_matrix_constant(shape,scale,tmax)
@@ -95,26 +105,33 @@ create_model_func_provinces_fixed <- function(parTab, data=NULL, PRIOR_FUNC=NULL
       presymptom_probs <- calculate_probs_presymptomatic_lnorm(tmax, incu_par1, incu_par2)
       onset_probs <- calculate_onset_probs_lnorm(tmax, incu_par1, incu_par2)
     }
-    
-    ## This is used to get probability of arriving pre-symptomatic, used for calculation of local cases
-    daily_prob_leaving_seed <- prob_leave_pre_symptoms_vector(leave_matrix, presymptom_probs)
-    daily_prob_arrival_toa_precalc <- NULL
-    daily_prob_arrival_toi_precalc <- NULL
-    for (i in 1:n_provinces){
-      prob_arrival_matrix <- prob_arrive_pre_symptoms(arrival_matrices[[i]],presymptom_probs)
-      daily_prob_arrival_toa_precalc[[i]] <- local_travel_matrix_precalc(prob_arrival_matrix)
-      daily_prob_arrival_toi_precalc[[i]] <- prob_arrive_pre_symptoms_vector(arrival_matrices[[i]], presymptom_probs)
+    if(n_provinces > 1){
+      ## This is used to get probability of arriving pre-symptomatic, used for calculation of local cases
+      daily_prob_leaving_seed <- prob_leave_pre_symptoms_vector(leave_matrix, presymptom_probs)
+      daily_prob_arrival_toa_precalc <- NULL
+      daily_prob_arrival_toi_precalc <- NULL
+      for (i in 1:n_provinces){
+        prob_arrival_matrix <- prob_arrive_pre_symptoms(arrival_matrices[[i]],presymptom_probs)
+        
+        ## Get daily probability of someone arriving in this province
+        daily_prob_arrival_toa_precalc[[i]] <- local_travel_matrix_precalc(prob_arrival_matrix)
+        ## Daily probability of arriving at some point before becoming symptomatic
+        daily_prob_arrival_toi_precalc[[i]] <- prob_arrive_pre_symptoms_vector(arrival_matrices[[i]], presymptom_probs)
+      }
     }
   }
   ##############################################################
   ## v) SETUP SERIAL INTERVAL
   ##############################################################
+  ## If not re-estimating serial interval parameters, calculate the serial interval here
   recalc_serial_interval <- TRUE
-  if(all(parTab[parTab$names %in% c("serial_interval_gamma_alpha","serial_interval_gamma_scale"),"fixed"] == 1)){
+  if(all(parTab[parTab$names %in% c("serial_interval_mean","serial_interval_sd"),"fixed"] == 1)){
     recalc_serial_interval <- FALSE
     ## Serial interval
-    serial_interval_alpha <- pars_all["serial_interval_gamma_alpha"]
-    serial_interval_scale <- pars_all["serial_interval_gamma_scale"]
+    serial_pars <- gamma_pars_from_mean_sd(pars_all["serial_interval_mean"], pars_all["serial_interval_sd"]^2)
+    
+    serial_interval_alpha <- serial_pars[[1]]
+    serial_interval_scale <- serial_pars[[2]]
     
     serial_probs <- calculate_serial_interval_probs(tmax, serial_interval_alpha, serial_interval_scale)
   }
@@ -135,9 +152,12 @@ create_model_func_provinces_fixed <- function(parTab, data=NULL, PRIOR_FUNC=NULL
       ###########################################################
       if(recalc_confirm_delay){
       ## Gamma distribution
+        #confirm_pars <- gamma_pars_from_mean_sd(pars_all["confirm_delay_mean"], pars_all["confirm_delay_sd"]^2)
+        #shape <- confirm_pars[[1]]
+        #scale <- confirm_pars[[2]]
+        
         shape <- pars_all["confirm_delay_shape"]
         scale <- pars_all["confirm_delay_scale"]
-        
         ## If time-varying parameters not specified, enumerate out the point
         ## estimates
         ## Move into model func call if need to estimate these...
@@ -172,8 +192,10 @@ create_model_func_provinces_fixed <- function(parTab, data=NULL, PRIOR_FUNC=NULL
       ###########################################################
       if(recalc_serial_interval){
         ## Serial interval
-        serial_interval_alpha <- pars_all["serial_interval_gamma_alpha"]
-        serial_interval_scale <- pars_all["serial_interval_gamma_scale"]
+        serial_pars <- gamma_pars_from_mean_sd(pars_all["serial_interval_mean"], pars_all["serial_interval_sd"]^2)
+        
+        serial_interval_alpha <- serial_pars[[1]]
+        serial_interval_scale <- serial_pars[[2]]
         
         serial_probs <- calculate_serial_interval_probs(tmax, serial_interval_alpha, serial_interval_scale)
       }
@@ -196,56 +218,79 @@ create_model_func_provinces_fixed <- function(parTab, data=NULL, PRIOR_FUNC=NULL
       ## v) find shift to infection incidence inflection point 
       ##    needed to get onset inflection point on known date
       ###########################################################
-      K <- pars_all["K"]
-      if(model_ver == 2){
-        t_switch_onsets <- pars_all["t_switch"]
+      if(model_ver == "logistic" & 
+         parTab[parTab$names == "growth_rate" & 
+                parTab$province == "1","fixed"] == 1){
+        K <- exp(pars_all["K"])
+        
+        ## Peak symptom onsets t_switch_onsets days after seeding
+        ## pars_all["t_switch"] is the actual date of peak symptom onset
+        t_switch_onsets <- pars_all["t_switch"] - pars_seed["t0"]
+        
+        ## When do infections need to have peaked to give symptom onset peak
+        ## on the specified day?
         find_tswitch_offset <- function(){
-          f <- function(t_unknown){
-            t_switch_prime <- t_switch_onsets - t_unknown
-            growth <- log(K-1)/t_switch_prime
-            
-            y <- daily_sigmoid_interval_cpp(growth, K, tmax, 0)
-            onsets <- calculate_onset_incidence(y, onset_probs,tmax)
-            
-            t_switch_unknown <- which.max(onsets)
-            (t_switch_unknown - t_switch_onsets)^2
-          }
-          
-          t_unknown <- 0
-          test1 <- f(t_unknown)
-          t_unknown <- t_unknown + 1
-          test2 <- f(t_unknown)
-          while(test2 < test1){
-            test1 <- test2
-            t_unknown <- t_unknown + 1
-            test2 <- f(t_unknown)
-          }
-          t_unknown <- t_unknown - 1
-          return(t_unknown)
+           f <- function(t_unknown){
+             ## Infections peak t_unknown days before onsets
+               t_switch_prime <- t_switch_onsets - t_unknown
+               ## Growth rate in terms of K and time of peak infections
+               growth <- log(K-1)/t_switch_prime
+               ## Do the convolution with the current incubation period
+               y <- daily_sigmoid_interval_cpp(growth, K, tmax, 0)
+               onsets <- calculate_onset_incidence(y, onset_probs,tmax)
+         
+               ## What's the difference between the peak symptom onset this gives
+               ## and desired peak symptom onset?
+               t_switch_unknown <- which.max(onsets)
+               (t_switch_unknown - t_switch_onsets)^2
         }
-        ## T-switch is based on symptom onsets. So t-switch (peak) for infections is
-        ## peak of symptom onsets minus mode of incubation period distribution
-        t_offset <- find_tswitch_offset()
-        t_switch <- t_switch_onsets - t_offset
+       
+      ## Increase delay between peak infections and peak onsets until time of peak onsets
+      ## matches pars_all["t_switch"]-pars_seed["t0"]
+       t_unknown <- 0
+       test1 <- f(t_unknown)
+       t_unknown <- t_unknown + 1
+       test2 <- f(t_unknown)
+       while(test2 < test1){
+         test1 <- test2
+         t_unknown <- t_unknown + 1
+         test2 <- f(t_unknown)
+       }
+       t_unknown <- t_unknown - 1
+       return(t_unknown)
+     }
+      # ## T-switch is based on symptom onsets. So t-switch (peak) for infections is
+      # ## peak of symptom onsets minus mode of incubation period distribution
+       t_offset <- find_tswitch_offset()
+       #t_offset <- 5
+       #t_offset <- pars_all["incu_mode"]
       }
       ###########################################################
       ## STEP 1 - GROWTH OF INFECTIONS IN SEED PROVINCE
       ###########################################################          
       ## Get local growth of seed province. Will add/subtract this from later estimates
       ## Exponential growth for model 1, logistic for model 2
-      if(model_ver == 1){
+      if(model_ver == "exp"){
         infections_seed <- pars_seed["i0"]*daily_exp_interval_cpp(pars_seed["growth_rate"], tmax, pars_seed["t0"])
       } else {
         ## Can define logistic growth rate in terms of K and inflection point
-        growth_rate <- log(pars_all["K"]-1)/t_switch
-        infections_seed <- daily_sigmoid_interval_cpp(growth_rate, pars_all["K"], tmax, pars_seed["t0"])
+        K <- exp(pars_all["K"])
+        if(parTab[parTab$names == "growth_rate" & parTab$province == "1","fixed"] == 1){
+          t_switch <- pars_all["t_switch"] - pars_seed["t0"] - t_offset
+          growth_rate <- log(K-1)/t_switch
+        } else {
+          growth_rate <- pars_seed["growth_rate"]
+          t_switch <- log(K-1)/growth_rate
+        }
+        infections_seed <- daily_sigmoid_interval_cpp(growth_rate, K, tmax, pars_seed["t0"])
       }
+      
+      ## Storage for numbers about to be solved
       all_infections <- numeric(bigT*n_provinces)
       all_confirmations <- numeric(bigT*n_provinces)
       all_onsets <- numeric(bigT*n_provinces)
       all_local_infections <- numeric(bigT*n_provinces)
       all_imported_infections <- numeric(bigT*n_provinces)
-      
       
       all_presymptomatic_prevalence <- numeric(bigT*n_provinces)
       all_symptomatic_prevalence <- numeric(bigT*n_provinces)
@@ -257,6 +302,8 @@ create_model_func_provinces_fixed <- function(parTab, data=NULL, PRIOR_FUNC=NULL
       ## Need to loop through each province
       index <- 1
       for(province in unique_provinces) {
+        
+        ## Get parameters that apply to this province
         pars <- pars_all[which(par_provinces %in% c("all",province))]
         
         ## Proportion of seed cases that will get exported
@@ -290,31 +337,49 @@ create_model_func_provinces_fixed <- function(parTab, data=NULL, PRIOR_FUNC=NULL
           t0_import <- pars_seed["t0"]
           t0 <- pars["t0"] + t0_import
           t0 <- min(t0, tmax-1)
+          if(is.na(t0)){
+            t0 <- t0_import
+          }
           
           ## Solve model for this province
-          #if(province == "3"){
-          #  local_r <- rnorm(1,0.4,0.05)
-          #  local_r <- max(0, local_r)
-          #} else {
-            local_r <- pars["local_r"]
-          #}
+          local_r <- pars["local_r"]
+          ## This finds the number of locally generated cases. We find the time that infections in the seed location arrive,
+          ## and then generate local_r cases over the remainder of their serial interval spent in the new province
           import_cases_local <- calculate_local_cases(daily_prob_arrival_toa, infections_seed, serial_probs, local_r)
           import_cases_local[is.na(import_cases_local)] <- 0
         }
         
         ## Growth model
-        growth_rate <- pars_seed["growth_rate"]
-        i0 <- pars["i0"]
+        if(model_ver == "exp"){
+          growth_rate <- pars_seed["growth_rate"]
+        } else {
+          ## Can define logistic growth rate in terms of K and inflection point
+          K <- exp(pars_all["K"])
+          if(parTab[parTab$names == "growth_rate" & parTab$province == "1","fixed"] == 1){
+            t_switch <- pars_all["t_switch"] - pars_seed["t0"] - t_offset
+            growth_rate <- log(K-1)/t_switch
+          } else {
+            growth_rate <- pars_seed["growth_rate"]
+            t_switch <- log(K-1)/growth_rate
+          }
+        }
         
-        #import_cases_local <- calculate_local_from_import_infections(import_cases*pars["local_r"], serial_probs, tmax)
+        i0 <- pars["i0"]
+        if(is.na(i0)) {
+          i0 <- 0
+        }
+        
+        
+        ## Total number of cases is number of locally generated cases plus imported cases
         import_cases <- import_cases_time_of_infection + import_cases_local
-        if(model_ver == 1) {
+        ## Exponential growth model
+        if(model_ver == "exp") {
           res <- calculate_all_incidences(growth_rate, t0, i0, import_cases,
                                           onset_probs, report_delay_mat,
                                           tmax)
-        } else {
-          growth_rate <- log(pars_all["K"]-1)/t_switch
-          res <- calculate_all_incidences_logistic(growth_rate, t0, i0, pars_all["K"],
+          ## Logistic growth model
+        } else {          
+          res <- calculate_all_incidences_logistic(growth_rate, t0, i0, exp(pars_all["K"]),
                                                    import_cases,
                                                    onset_probs, report_delay_mat,
                                                    tmax)
@@ -328,28 +393,42 @@ create_model_func_provinces_fixed <- function(parTab, data=NULL, PRIOR_FUNC=NULL
         index <- index + 1
         all_infections[indices] <- infections
         all_onsets[indices] <- onsets
+        
         all_confirmations[indices] <- confirmations
         all_local_infections[indices] <- import_cases_local
         all_imported_infections[indices] <- import_cases_time_of_infection
         
         if(calculate_prevalence){
-          if(province == "1") {
-            prob_not_left_matrix <- probs_not_left_by_day(export_probs, tmax)
-            tmp_presymptomatic_prevalence_local <- calculate_infection_prevalence_hubei(infections, presymptom_probs,
-                                                                                        prob_not_left_matrix)
-            tmp_presymptomatic_prevalence_imported <- numeric(tmax+1)
-          } else {
-            tmp_presymptomatic_prevalence_local <- calculate_infection_prevalence_local(import_cases_local, presymptom_probs)
-            tmp_presymptomatic_prevalence_imported <- calculate_infection_prevalence_imported(infections_seed, 
-                                                                                              presymptom_probs, daily_prob_arrival_toa)
+          if(n_provinces > 1){
+            if(province == "1") {
+              prob_not_left_matrix <- probs_not_left_by_day(daily_export_probs, tmax)
+              tmp_presymptomatic_prevalence_local <- calculate_infection_prevalence_hubei(infections, presymptom_probs,
+                                                                                          prob_not_left_matrix)
+              tmp_presymptomatic_prevalence_imported <- numeric(tmax+1)
+            } else {
+              tmp_presymptomatic_prevalence_local <- calculate_infection_prevalence_local(import_cases_local, presymptom_probs)
+              tmp_presymptomatic_prevalence_imported <- calculate_infection_prevalence_imported(infections_seed, 
+                                                                                                presymptom_probs, daily_prob_arrival_toa)
+            }
           }
           
-          prob_preconfirmation  <- calculate_probs_preconfirmation(tmax, pars["confirm_delay_shape"], 
-                                                                   pars["confirm_delay_scale"])
+          #confirm_pars <- gamma_pars_from_mean_sd(pars["confirm_delay_mean"], pars["confirm_delay_sd"]^2)
+          #shape <- confirm_pars[[1]]
+          #scale <- confirm_pars[[2]]
+          
+          shape <- pars_all["confirm_delay_shape"]
+          scale <- pars_all["confirm_delay_scale"]
+          
+          prob_preconfirmation  <- calculate_probs_preconfirmation(tmax, shape, 
+                                                                   scale)
           prob_prerecovery <- calculate_probs_notrecovered(tmax, pars["recovery_shape"], 
                                                            pars["recovery_scale"])
           
-          all_presymptomatic_prevalence[indices] <- tmp_presymptomatic_prevalence_local + tmp_presymptomatic_prevalence_imported
+          if(n_provinces > 1){
+            all_presymptomatic_prevalence[indices] <- tmp_presymptomatic_prevalence_local + tmp_presymptomatic_prevalence_imported
+          } else {
+            all_presymptomatic_prevalence[indices] <- 0
+          }
           all_symptomatic_prevalence[indices] <- calculate_unrecovered_prevalence(onsets, prob_prerecovery)
           all_preconfirmation_prevalence[indices] <- calculate_preconfirmation_prevalence(onsets, prob_preconfirmation)
           all_cantravel_prevalence[indices] <- all_presymptomatic_prevalence[indices] + all_preconfirmation_prevalence[indices]
@@ -381,8 +460,7 @@ create_model_func_provinces_fixed <- function(parTab, data=NULL, PRIOR_FUNC=NULL
         if (!is.null(PRIOR_FUNC)) {
           lik <- lik + PRIOR_FUNC(pars_all)
         }
-        # print(lik)
-        return(lik)
+        return(lik + dunif(t_switch,84,90,log=TRUE))
       }
     } else {
       lik <- -100000

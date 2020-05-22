@@ -1,5 +1,6 @@
 library(tidyverse)
 setwd("~/Documents/GitHub/covback/")
+devtools::load_all()
 travel_probs <- read_csv("data/raw/extracted_import_proportions.csv")
 province_key <- read_csv("data/raw/extracted_data_key.csv")
 
@@ -57,23 +58,3 @@ export_probs_final <- tibble(date=times,export_prob=export_probs$probs)
 
 write_csv(export_probs_final, "export_probs_lower.csv")
 write_csv(import_probs, "import_probs.csv")
-
-
-
-import_probs_melt <- reshape2::melt(travel_probs,id.vars="date")
-factor_order <- import_probs_melt %>% filter(variable != "Hubei") %>% group_by(variable) %>% summarise(x=max(value)) %>%
-  arrange(-x) %>% pull(variable)
-factor_order <- as.character(factor_order)
-import_probs_melt <- import_probs_melt %>% filter(variable != "Hubei")
-import_probs_melt$Var1 <- factor(import_probs_melt$variable, levels=factor_order)
-p1 <- ggplot(import_probs_melt[import_probs_melt$variable != "Hubei",]) + geom_line(aes(x=as.numeric(date),y=value,col=Var1))
-
-
-import_probs_melt <- reshape2::melt(import_probs1)
-factor_order <- import_probs_melt %>% filter(province_use != "Hubei") %>% group_by(province_use) %>% summarise(x=max(value)) %>%
-  arrange(-x) %>% pull(province_use)
-factor_order <- as.character(factor_order)
-import_probs_melt <- import_probs_melt %>% filter(province_use != "Hubei")
-import_probs_melt$province_use <- factor(import_probs_melt$province_use, levels=factor_order)
-p2 <- ggplot(import_probs_melt) + geom_line(aes(x=as.numeric(variable),y=value,col=province_use))
-p2

@@ -89,23 +89,39 @@ create_incubation_prior <- function(inc_period_draws){
 }
 
 #' @export
-create_random_effects_rlocal <- function(parTab, province_prior="3",
+create_random_effects_rlocal <- function(parTab, province_prior="1",
                                          r_local_mean=0.4, r_local_sd=0.05,
-                                         func_ver="norm"){
+                                         func_ver="norm",
+                                         tswitchmean=87,tswitchsd=1){
   subset_parTab <- parTab[parTab$names == "local_r",]
-  r_index <- which(subset_parTab$province == province_prior)
+  r_index <- which(subset_parTab$province != province_prior)
+  par_names <- parTab$names
   if(func_ver == "norm"){
     prior_func <- function(pars){
+      r_local_sd1 <- pars["local_r_sd"]
+      r_local_mean1 <- pars["local_r_mean"]
       r_locals <- pars[which(names(pars) == "local_r")]
-      lik <- dnorm(r_locals[r_index],r_local_mean,r_local_sd,log=TRUE)
+      lik <- dnorm(r_locals[r_index],r_local_mean1,r_local_sd1,log=TRUE)
+
+      
       return(sum(lik))
     }
   } else {
-    gamma_pars <- gamma_pars_from_mean_sd(r_local_mean, r_local_sd^2)
     prior_func <- function(pars){
+      r_local_sd1 <- pars["local_r_sd"]
+      r_local_mean1 <- pars["local_r_mean"]
+      gamma_pars <- gamma_pars_from_mean_sd(r_local_mean1, r_local_sd1^2)
       r_locals <- pars[which(names(pars) == "local_r")]
       lik <- dgamma(r_locals[r_index],gamma_pars[[1]],scale=gamma_pars[[2]],log=TRUE)
-      return(sum(lik))
+      
+      #print(lik)
+      ## T switch bit
+      growth_rate <- pars[which(names(pars) == "growth_rate")[1]]
+      t_switch <- log(pars["K"]-1)/growth_rate
+      t_switch <- t_switch + pars[which(names(pars) == "t0")[1]] + 5
+      lik2 <- dnorm(t_switch, tswitchmean,tswitchsd,1)
+      
+      return(sum(lik) + lik2)
     }
   }
   prior_func
@@ -163,4 +179,37 @@ create_prior_startdate <- function(parTab, inc_period_draws, t0_mean, t0_sd){
     return(a+b+c)
   }
   prior_func
+}
+
+#' @export
+find_prior_sd <- function(prior_mean, prior_model="norm",
+                          prior_lower_quantile, prior_upper_quantile,
+                          upper_bound=5){
+  
+  diff_in_quants <- prior_upper_quantile - prior_lower_quantile
+  if(prior_model == "norm"){
+    f <- function(prior_sd){
+      res <- qnorm(c(0.025,0.975),prior_mean, prior_sd)
+      sum((res - c(prior_lower_quantile, prior_upper_quantile))^2)
+    }  
+  } else {
+    f <- function(prior_sd){
+      gamma_pars <- gamma_pars_from_mean_sd(prior_mean, prior_sd^2)
+      res <- qgamma(c(0.025,0.975),gamma_pars[[1]], scale=gamma_pars[[2]])
+      sum((res - c(prior_lower_quantile, prior_upper_quantile))^2)
+    } 
+  }
+  use_par <- optim(1, f, method="Brent",lower=0,upper=upper_bound)$par
+  return(use_par)
+}
+
+#' @export
+find_all_prior_sds <- function(prior_table){
+  prior_sds <- numeric(nrow(prior_table))
+  for(i in 1:nrow(prior_table)){
+    prior_sds[i] <- find_prior_sd(prior_table$mean[i], prior_table$model[i],
+                                  prior_table$lower_quantile[i], prior_table$upper_quantile[i],
+                                  prior_table$upper_bound_sd[i])  
+  }
+  return(prior_sds)
 }

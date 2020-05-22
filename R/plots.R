@@ -37,17 +37,25 @@ generate_prediction_intervals <- function(chain, parTab, data, time_varying_conf
                                           nsamp=1000,
                                           add_noise=TRUE, noise_ver="poisson",incubation_ver="weibull",
                                           return_draws=FALSE,
-                                          model_ver=1){
+                                          model_ver=1,
+                                          single_province=FALSE){
+  if(single_province){
+    model_func <- create_model_func(parTab, data, ver="model",model_ver=model_ver,
+                                    noise_ver=noise_ver,incubation_ver=incubation_ver)
+    
+  } else {
     model_func <- create_model_func_provinces_fixed(parTab, data, time_varying_confirm_delay_pars=time_varying_confirm_delay_pars,
                                               daily_import_probs = daily_import_probs, daily_export_probs = daily_export_probs,
                                               ver="model",model_ver=model_ver,incubation_ver=incubation_ver,
                                               calculate_prevalence=TRUE)
+  }
     par_names <- parTab$names
 
     samps <- sample(unique(chain$sampno), nsamp)
     
     store_all <- NULL
     for(i in seq_along(samps)){
+      print(i)
         pars <- get_index_par(chain, samps[i])
         names(pars) <- par_names
         
@@ -86,8 +94,11 @@ generate_prediction_intervals <- function(chain, parTab, data, time_varying_conf
             res <- bind_rows(res, subset_confirmations)
         }
         res$sampno <- i
-        store_all <- bind_rows(store_all, res)
+        store_all[[i]] <- res
+        #store_all <- bind_rows(store_all, res)
     }
+    print("Done solving model...")
+    store_all <- do.call("bind_rows", store_all)
     if(return_draws) {
       return(list(draws=store_all,samp_ids=samps))
     }

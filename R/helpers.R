@@ -1,4 +1,10 @@
 #' @export
+logistic_growth <- function(K, i0, r, t0, ts){
+  y <- K/(1 + ((K-i0)/i0)*exp(-r*(ts-t0)))
+  y
+}
+
+#' @export
 convert_date_to_integer <- function(date, times){
   which(times == as.POSIXct(date,format="%Y-%m-%d",tz="UTC"))
 }
