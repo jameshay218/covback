@@ -4,11 +4,12 @@ devtools::load_all()
 travel_probs <- read_csv("data/raw/extracted_import_proportions.csv")
 province_key <- read_csv("data/raw/extracted_data_key.csv")
 
-## Change to 4000000 for scenario
+## Change to 4000000 for lower travel scenario
 total_travellers <- 5000000
 wuhan_pop_ini <- 9785388
+#wuhan_pop_ini <- 11080000
 
-## Change to 2020-01-23 for scenario
+## Change to 2020-01-23 for lower travel scenario
 index_date_end <- as.POSIXct("2020-01-25", 
            format = "%Y-%m-%d", tz = "UTC")
 

@@ -9,20 +9,26 @@ chain_save_wd <- "~/Documents/GitHub/covback_chains_final/final_20200522/"
 
 ## Either load package locally or install from github
 setwd("~/Documents/GitHub/covback/")
-devtools::load_all()
-#install.packages("~/Documents/GitHub/covback/",repos=NULL,type="source")
+#devtools::load_all()
+
+install.packages("~/Documents/GitHub/covback/",repos=NULL,type="source")
 library(covback)
 
-mcmcPars1 <- c("iterations"=100000,"popt"=0.44,"opt_freq"=1000,
-               "thin"=100,"adaptive_period"=50000,"save_block"=100)
-mcmcPars2 <- c("iterations"=350000,"popt"=0.234,"opt_freq"=1000,
-               "thin"=100,"adaptive_period"=150000,"save_block"=100)
+#mcmcPars1 <- c("iterations"=100000,"popt"=0.44,"opt_freq"=1000,
+#               "thin"=100,"adaptive_period"=50000,"save_block"=100)
+#mcmcPars2 <- c("iterations"=350000,"popt"=0.234,"opt_freq"=1000,
+#               "thin"=100,"adaptive_period"=150000,"save_block"=100)
+mcmcPars1 <- c("iterations"=1000,"popt"=0.44,"opt_freq"=1000,
+               "thin"=1,"adaptive_period"=5000,"save_block"=1000)
+mcmcPars2 <- c("iterations"=3500,"popt"=0.234,"opt_freq"=1000,
+               "thin"=1,"adaptive_period"=1500,"save_block"=1000)
 
 ## Table giving all scenarios with parameter settings, enumerated out for each chain number
 scenario_key <- read_csv("~/Documents/GitHub/covback/scripts/scenario_key.csv")
+scenario_key <- scenario_key %>% filter(chain_no == 1)
 
 ## Set up parallelisation
-n_clusters <- 8
+n_clusters <- 6
 cl <- makeCluster(n_clusters)
 registerDoParallel(cl)
 

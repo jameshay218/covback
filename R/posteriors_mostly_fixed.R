@@ -136,7 +136,6 @@ create_model_func_provinces_fixed <- function(parTab,
 
   model_func <- function(pars_all) {
     names(pars_all) <- par_names
-    browser()
     if(!solve_prior){
       ###########################################################
       ## STEP A - EXTRACT PARAMETERS
@@ -430,7 +429,6 @@ create_model_func_provinces_fixed <- function(parTab,
           if(!is.null(time_varying_confirm_delay_pars)){
             all_preconfirmation_prevalence[indices] <- calculate_preconfirmation_prevalence(onsets, prob_preconfirmation)
           } else {
-            browser()
             all_preconfirmation_prevalence[indices] <- calculate_preconfirmation_prevalence_vector(onsets, time_varying_confirm_delay_pars$shape, time_varying_confirm_delay_pars$scale)
           }
           all_cantravel_prevalence[indices] <- all_presymptomatic_prevalence[indices] + all_preconfirmation_prevalence[indices]
