@@ -41,10 +41,10 @@ cols <- ggsci::pal_npg()(10)
 
 setwd("~/Documents/GitHub/covback/")
 devtools::load_all()
-savewd <- "~/Google Drive/nCoV/backcalculation_paper/figures_final_raw2/"
+savewd <- "~/Google Drive/nCoV/backcalculation_paper/figures_final_adjusted/"
 adaptive_period <- 100000
 nsamp <- 1000
-scale_reporting <- FALSE
+scale_reporting <- TRUE
 
 n_wuhan <- 9785388
 
@@ -488,18 +488,18 @@ for(i in seq_along(run_names)){
 }
 
 runname_key <- c(
-  "main"="Model variant 1 (baseline, intermediate Wuhan prevalence)",
-  "diffuse_r_local"="Model variant 2 (increased local transmission, lower Wuhan prevalence)", 
-  "t_switch_6"="Model variant 3 (symptom peak 29th Jan, higher Wuhan prevalence)",
-  "earliest_seed"="Model variant 4 (17th Nov seed)",
-  "early_seed"="Model variant 5 (1st Dec seed)",
-  "fewer_travellers"="Model variant 6 (4 million travellers)",
-  "t_switch_1"="Model variant 7 (symptom peak 23rd Jan)",
-  "t_switch_2"="Model variant 8 (symptom peak 24th Jan)",
-  "t_switch_3"="Model variant 9 (symptom peak 26th Jan)",
-  "t_switch_4"="Model variant 10 (symptom peak 27th Jan)",
-  "t_switch_5"="Model variant 11 (symptom peak 28th Jan)",
-  "fixed_serial_int" = "Model variant 12 (fixed serial interval distribution)"
+  "main"="Analysis 1 (baseline, intermediate Wuhan prevalence)",
+  "diffuse_r_local"="Analysis 2 (increased local transmission, lower Wuhan prevalence)", 
+  "t_switch_6"="Analysis 3 (symptom peak 29th Jan, higher Wuhan prevalence)",
+  "earliest_seed"="Analysis 4 (17th Nov seed)",
+  "early_seed"="Analysis 5 (1st Dec seed)",
+  "fewer_travellers"="Analysis 6 (4 million travellers)",
+  "t_switch_1"="Analysis 7 (symptom peak 23rd Jan)",
+  "t_switch_2"="Analysis 8 (symptom peak 24th Jan)",
+  "t_switch_3"="Analysis 9 (symptom peak 26th Jan)",
+  "t_switch_4"="Analysis 10 (symptom peak 27th Jan)",
+  "t_switch_5"="Analysis 11 (symptom peak 28th Jan)",
+  "fixed_serial_int" = "Analysis 12 (fixed serial interval distribution)"
 )
 metrics_23rdJan_backup <- metrics_23rdJan
 metrics_23rdJan <- metrics_23rdJan %>% filter(runname != "r_local_unconstrained")

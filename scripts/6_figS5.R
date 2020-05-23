@@ -1,5 +1,10 @@
 library(extrafont)
 library(ggthemes)
+library(ggsci)
+library(ggplot2)
+library(tidyverse)
+library(patchwork)
+library(pals)
 #install.packages("ggthemes")
 
 export_theme <- theme_tufte() + 
@@ -43,7 +48,7 @@ export_probs_plot <- export_probs_plot %>% filter(times >= "2019-12-08")
 pA <- ggplot(data=export_probs_plot) +
   geom_line(aes(x=x,y=y))+
   geom_vline(xintercept=(as.POSIXct("2020-01-23", format="%Y-%m-%d")),
-             linetype="dashed",col="blue") +
+             linetype="dashed") +
   scale_x_datetime(breaks="5 days")+
   theme_bw() +
   scale_y_continuous(limits=c(0,0.02), breaks=seq(0,0.02,by=0.002)) +
@@ -66,12 +71,13 @@ import_probs_melted$Province <- factor(import_probs_melted$Province, levels=impo
 pB <- ggplot(data=import_probs_melted) +
   geom_line(aes(x=variable,y=value, col=Province))+
   geom_vline(xintercept=(as.POSIXct("2020-01-23", format="%Y-%m-%d")),
-             linetype="dashed",col="blue") +
+             linetype="dashed") +
+  #scale_colour_manual(values=as.vector(polychrome(29)))+
   scale_x_datetime(breaks="5 days")+
   scale_y_continuous(limits=c(0,0.25),breaks=seq(0,0.25,by=0.05)) +
   guides(col=guide_legend(ncol=3)) +
   theme_bw() +
-  ylab("Proportion of cases exported\n from Wuhan received") +
+  ylab("Proportion of Wuhan travelers received") +
   xlab("Date") +
   export_theme + 
   theme(legend.position=c(0.8,0.5))
@@ -80,10 +86,10 @@ pB
 figS3 <- pA / pB
 
 
-pdf("figures/figS3.pdf",height=8,width=8)
+pdf("figS5.pdf",height=8,width=8)
 figS3
 dev.off()
-png("figures/figS3.png",height=8,width=8,units="in",res=300)
+png("figS5.png",height=8,width=8,units="in",res=300)
 figS3
 dev.off()
 

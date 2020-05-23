@@ -4,7 +4,6 @@ library(patchwork)
 library(ggthemes)
 
 
-
 pop_wuhan <- 9785388
 n_wuhan <- 9785388
 
@@ -33,7 +32,7 @@ export_theme <- theme_tufte() +
   )
 cols <- ggsci::pal_npg()(10)
 
-setwd("~/Google Drive/nCoV/backcalculation_paper/figures_check/")
+setwd("~/Google Drive/nCoV/backcalculation_paper/figures_final_raw//")
 dirs <- list.files()
 topwd <- getwd()
 all_prevs <- list()

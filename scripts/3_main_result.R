@@ -130,7 +130,7 @@ res <- foreach(i=1:nrow(scenario_key),.packages=c("covback","lazymcmc","tidyvers
   
   
   ## Use this as input to multivariate chain
-  chain <- read.csv(paste0(filename_tmp,"_univariate_chain.csv"))
+  chain <- read.csv(paste0(filename_tmp1,"_univariate_chain.csv"))
   
   ## Check convergence
   pdf(paste0(filename_tmp,"_chain.pdf"))
