@@ -199,3 +199,5 @@ dev.off()
 tmp %>% ggplot() + geom_histogram(aes(x=report_delay)) + facet_wrap(~stage, scales="free_y")
 
 
+
+

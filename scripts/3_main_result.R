@@ -9,8 +9,9 @@ chain_save_wd <- "~/Documents/GitHub/covback_chains_final/final_20200522/"
 
 ## Either load package locally or install from github
 setwd("~/Documents/GitHub/covback/")
+devtools::load_all()
 #install.packages("~/Documents/GitHub/covback/",repos=NULL,type="source")
-library(covback)
+#library(covback)
 
 #mcmcPars1 <- c("iterations"=100000,"popt"=0.44,"opt_freq"=1000,
 #               "thin"=100,"adaptive_period"=50000,"save_block"=100)
@@ -26,7 +27,7 @@ scenario_key <- read_csv("~/Documents/GitHub/covback/scripts/scenario_key.csv")
 #scenario_key <- scenario_key %>% filter(chain_no == 1)
 
 ## Set up parallelisation
-n_clusters <- 16
+n_clusters <- 4
 cl <- makeCluster(n_clusters)
 registerDoParallel(cl)
 

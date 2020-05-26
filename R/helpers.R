@@ -100,24 +100,41 @@ create_export_prob_matrix <- function(total_travellers, wuhan_pop_ini,
                                       date_start, date_end,
                                       index_date_start=as.POSIXct("2020-01-10", format="%Y-%m-%d",tz="UTC"), 
                                       index_date_end=as.POSIXct("2020-01-25", format="%Y-%m-%d",tz="UTC")){
+  
   times <- seq(date_start, date_end,by="1 day")
-  emigration_indices <- export_dat %>% filter(Date >= index_date_start & Date <= index_date_end) %>%
-    select(emigration) %>% summarise(total_indices=sum(emigration)) %>% pull(total_indices)
+  ## Total emigration index
+  emigration_indices <- export_dat %>% 
+    filter(Date >= index_date_start & Date <= index_date_end) %>%
+    select(emigration) %>% 
+    summarise(total_indices=sum(emigration)) %>% 
+    pull(total_indices)
+  
+  ## How many travellers per index?
   per_index <- total_travellers/emigration_indices
+  
+  ## Convert indices to actual numbers of travellers,
+  ## then get the number that leave Hubei
   export_dat <- export_dat %>%
     mutate(total_left=emigration*per_index,
            total_arrived=immigration*per_index,
            prop_export=total_left*frac_leave_hubei)
+  
+  ## Now go through and ask, for a given initial Wuhan population size,
+  ## how many individuals are in Wuhan at the start of each day?
   total_pop <- numeric(nrow(export_dat))
   total_pop[1] <- wuhan_pop_ini
   for(i in 2:nrow(export_dat)) {
-    total_pop[i] <- total_pop[i-1] + export_dat$total_arrived[i]- export_dat$total_left[i]
+    ## -1 because it's number at the start of yesterday, plus those that arrived yesterday minus those who left yesterday
+    total_pop[i] <- total_pop[i-1] + export_dat$total_arrived[i-1] - export_dat$total_left[i-1]
   }
-  export_probs <- export_dat$prop_export/total_pop
+  
+  ## Convert number that left Wuhan to proportion that left Wuhan
+  export_probs <- export_dat$total_left/total_pop
   
   probs <- numeric(length(times))
   probs[which(times < min(export_dat$Date))] <- export_probs[1]
   probs[match(export_dat$Date, times)] <- export_probs
+  
   return(list(probs=probs,total_pop=total_pop))
 }
 

@@ -16,6 +16,7 @@ create_model_func_provinces_fixed <- function(parTab,
                                               report_rate_switch=83,
                                               report_rate_1=0.14,
                                               report_rate_2=0.85){
+  browser()
   par_names <- parTab$names
   par_provinces <- parTab$province
   unique_provinces <- unique(parTab$province)
@@ -24,6 +25,7 @@ create_model_func_provinces_fixed <- function(parTab,
   ## Start from last province
   unique_provinces <- unique_provinces[unique_provinces != "all"]
   n_provinces <- length(unique_provinces)
+  
   ##############################################################
   ## i) SETUP DATA
   ##############################################################
@@ -49,19 +51,23 @@ create_model_func_provinces_fixed <- function(parTab,
     
     bigT <- tmax + 1
   }
+  
   ##############################################################
   ## ii) SETUP TRAVEL PROBABILITIES
   ##############################################################
-  ## Exportation and importation probabilities, if >1 province
-  if(n_provinces > 1) {
-    leave_matrix <- prob_leave_on_day(daily_export_probs, tmax)
-    ## For each province, what's the daily probability of receiving a person from the seed province?
-    arrival_matrices <- NULL
-    ## First province isn't meaningful
-    for (i in 1:n_provinces){
-      arrival_matrices[[i]] <- prob_daily_arrival(daily_export_probs, daily_import_probs[i,], tmax)
-    }
+  ## Exportation and importation probabilities
+  
+  ## From a given day, what's the probability of leaving on each day in the future and not before?
+  leave_matrix <- prob_leave_on_day(daily_export_probs, tmax) 
+  
+  ## For each province, what's the daily probability of receiving a person from the seed province?
+  arrival_matrices <- NULL
+  ## First province isn't meaningful
+  for (i in 1:n_provinces){
+    ## On a given day, what's the probability of travelling from Wuhan to that province and not before?
+    arrival_matrices[[i]] <- prob_daily_arrival(daily_export_probs, daily_import_probs[i,], tmax)
   }
+  
   ##############################################################
   ## iii) SETUP REPORTING DELAYS
   ##############################################################
@@ -92,23 +98,27 @@ create_model_func_provinces_fixed <- function(parTab,
     recalc_incubation_period <- FALSE
     incu_par1 <- pars_all["lnorm_incu_par1"]
     incu_par2 <- pars_all["lnorm_incu_par2"]
+    
     ## For each day with a potential infection onset, get the probability of leaving at some point in the future before
     ## symptom onset
     presymptom_probs <- calculate_probs_presymptomatic_lnorm(tmax, incu_par1, incu_par2)
     onset_probs <- calculate_onset_probs_lnorm(tmax, incu_par1, incu_par2)
-    if(n_provinces > 1){
-      ## This is used to get probability of arriving pre-symptomatic, used for calculation of local cases
-      daily_prob_leaving_seed <- prob_leave_pre_symptoms_vector(leave_matrix, presymptom_probs)
-      daily_prob_arrival_toa_precalc <- NULL
-      daily_prob_arrival_toi_precalc <- NULL
-      for (i in 1:n_provinces){
-        prob_arrival_matrix <- prob_arrive_pre_symptoms(arrival_matrices[[i]],presymptom_probs)
-        
-        ## Get daily probability of someone arriving in this province
-        daily_prob_arrival_toa_precalc[[i]] <- local_travel_matrix_precalc(prob_arrival_matrix)
-        ## Daily probability of arriving at some point before becoming symptomatic
-        daily_prob_arrival_toi_precalc[[i]] <- prob_arrive_pre_symptoms_vector(arrival_matrices[[i]], presymptom_probs)
-      }
+    
+    ## This is used to get probability of arriving pre-symptomatic, used for calculation of local cases
+    ## Given infection on day t, what's the probability of leaving before symptom onset?
+    daily_prob_leaving_seed <- prob_leave_pre_symptoms_vector(leave_matrix, presymptom_probs)
+    daily_prob_arrival_toa_precalc <- NULL
+    daily_prob_arrival_toi_precalc <- NULL
+    
+    for (i in 1:n_provinces){
+      prob_arrival_matrix <- prob_arrive_pre_symptoms(arrival_matrices[[i]],presymptom_probs)
+      
+      ## Get daily probability of someone arriving in this province
+      ## toa = time of arrival
+      ## toi = time of infection
+      daily_prob_arrival_toa_precalc[[i]] <- local_travel_matrix_precalc(prob_arrival_matrix)
+      ## Daily probability of arriving at some point before becoming symptomatic
+      daily_prob_arrival_toi_precalc[[i]] <- prob_arrive_pre_symptoms_vector(arrival_matrices[[i]], presymptom_probs)
     }
   }
   ##############################################################
@@ -158,21 +168,12 @@ create_model_func_provinces_fixed <- function(parTab,
       ###########################################################
       if(recalc_incubation_period){
         ## Incubation period
-        if(incubation_ver == "weibull"){
-          weibull_alpha <- pars_all["weibull_alpha"]
-          weibull_sigma <- pars_all["weibull_sigma"]
-          ## For each day with a potential infection onset, get the probability of leaving at some point in the future before
-          ## symptom onset
-          presymptom_probs <- calculate_probs_presymptomatic_weibull(tmax, weibull_alpha, weibull_sigma)
-          onset_probs <- calculate_onset_probs_weibull(tmax, weibull_alpha, weibull_sigma)
-        } else {
-          incu_par1 <- pars_all["lnorm_incu_par1"]
-          incu_par2 <- pars_all["lnorm_incu_par2"]
-          ## For each day with a potential infection onset, get the probability of leaving at some point in the future before
-          ## symptom onset
-          presymptom_probs <- calculate_probs_presymptomatic_lnorm(tmax, incu_par1, incu_par2)
-          onset_probs <- calculate_onset_probs_lnorm(tmax, incu_par1, incu_par2)
-        }
+        incu_par1 <- pars_all["lnorm_incu_par1"]
+        incu_par2 <- pars_all["lnorm_incu_par2"]
+        ## For each day with a potential infection onset, get the probability of leaving at some point in the future before
+        ## symptom onset
+        presymptom_probs <- calculate_probs_presymptomatic_lnorm(tmax, incu_par1, incu_par2)
+        onset_probs <- calculate_onset_probs_lnorm(tmax, incu_par1, incu_par2)
       }
       
       ###########################################################

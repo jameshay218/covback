@@ -443,19 +443,6 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// prob_not_symptomatic
-double prob_not_symptomatic(double weibull_alpha, double weibull_sigma, double t);
-RcppExport SEXP _covback_prob_not_symptomatic(SEXP weibull_alphaSEXP, SEXP weibull_sigmaSEXP, SEXP tSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< double >::type weibull_alpha(weibull_alphaSEXP);
-    Rcpp::traits::input_parameter< double >::type weibull_sigma(weibull_sigmaSEXP);
-    Rcpp::traits::input_parameter< double >::type t(tSEXP);
-    rcpp_result_gen = Rcpp::wrap(prob_not_symptomatic(weibull_alpha, weibull_sigma, t));
-    return rcpp_result_gen;
-END_RCPP
-}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_covback_calculate_onset_probs_weibull", (DL_FUNC) &_covback_calculate_onset_probs_weibull, 3},
@@ -491,7 +478,6 @@ static const R_CallMethodDef CallEntries[] = {
     {"_covback_calculate_all_incidences", (DL_FUNC) &_covback_calculate_all_incidences, 7},
     {"_covback_calculate_all_incidences_logistic", (DL_FUNC) &_covback_calculate_all_incidences_logistic, 8},
     {"_covback_calculate_all_incidences_logistic_scale_reporting", (DL_FUNC) &_covback_calculate_all_incidences_logistic_scale_reporting, 11},
-    {"_covback_prob_not_symptomatic", (DL_FUNC) &_covback_prob_not_symptomatic, 3},
     {NULL, NULL, 0}
 };
 

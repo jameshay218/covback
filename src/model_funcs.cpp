@@ -210,12 +210,3 @@ List calculate_all_incidences_logistic_scale_reporting(double growth_rate, doubl
 }
 
 
-
-
-//[[Rcpp::export]]
-double prob_not_symptomatic(double weibull_alpha, double weibull_sigma, double t){
-  // Prob that you beame symptomatic in or before this time interval
-  double prob = R::pweibull(t+1, weibull_alpha, weibull_sigma,true,false);
-  return(1.0-prob);
-}
-
