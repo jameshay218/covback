@@ -118,9 +118,15 @@ res <- foreach(i=1:nrow(scenario_key),.packages=c("covback","lazymcmc","tidyvers
                                        daily_export_probs = export_probs_use,
                                          time_varying_confirm_delay_pars=time_varying_report_pars,
                                          incubation_ver="lnorm",ver="model",
-                                         noise_ver="poisson",model_ver="logistic",calculate_prevalence = TRUE,scale_reporting = FALSE)
+                                         noise_ver="poisson",model_ver="logistic",calculate_prevalence = TRUE)
   dat <- f(parTab$values)
-
+  
+  #dat %>% filter(var %in% c("infections","onsets","confirmations")) %>%
+  #  ggplot() + 
+  #  geom_line(aes(x=date,y=n, col=var)) + 
+  #  geom_point(data=dat[dat$var == "n",], aes(x=date,y=n),size=0.1) +
+  #  facet_wrap(~province,scales="free_y")
+  
   ## MCMC
   ## Run first chain
   output <- run_MCMC(parTab=startTab, data=confirmed_data1, mcmcPars=mcmcPars1, filename=filename_tmp,

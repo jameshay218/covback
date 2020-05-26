@@ -11,11 +11,7 @@ create_model_func_provinces_fixed <- function(parTab,
                                               incubation_ver="lnorm",
                                               model_ver="logistic", 
                                               solve_prior=FALSE, 
-                                              calculate_prevalence=FALSE,
-                                              scale_reporting=FALSE,
-                                              report_rate_switch=83,
-                                              report_rate_1=0.14,
-                                              report_rate_2=0.85){
+                                              calculate_prevalence=FALSE){
   par_names <- parTab$names
   par_provinces <- parTab$province
   unique_provinces <- unique(parTab$province)
@@ -272,12 +268,6 @@ create_model_func_provinces_fixed <- function(parTab,
         }
         infections_seed <- daily_sigmoid_interval_cpp(growth_rate, K, tmax, pars_seed["t0"])
       }
-      ## We now have number of new infections 
-      if(scale_reporting){
-        infections_seed[1:(report_rate_switch+1)] <- infections_seed[1:(report_rate_switch+1)]/report_rate_1
-        infections_seed[(report_rate_switch+2):length(infections_seed)] <- infections_seed[(report_rate_switch+2):length(infections_seed)]/report_rate_2
-      }
-      
       
       ## Storage for numbers about to be solved
       all_infections <- numeric(bigT*n_provinces)
@@ -367,18 +357,16 @@ create_model_func_provinces_fixed <- function(parTab,
         ## Total number of infections is number of locally generated infections plus imported infections
         infections_total <- import_infections_time_of_infection + infections_local
         
+        ## Scale for reporting prob
+        infections_total_scaled <- infections_total*pars["ascertainment_rate"]
+        
         ## Exponential growth model
         if(model_ver == "exp") {
-          res <- calculate_all_incidences(growth_rate, t0, i0, infections_total,onset_probs, report_delay_mat,tmax)
+          res <- calculate_all_incidences(growth_rate, t0, i0, infections_total_scaled,onset_probs, report_delay_mat,tmax)
           ## Logistic growth model
         } else {   
-          if(province == "1" & scale_reporting) {
-            res <- calculate_all_incidences_logistic_scale_reporting(growth_rate, t0, i0, exp(pars_all["K"]),infections_total,
-                                                                     onset_probs, report_delay_mat,tmax,report_rate_switch,report_rate_1,report_rate_2)
-          } else {
-            res <- calculate_all_incidences_logistic(growth_rate, t0, i0, exp(pars_all["K"]),infections_total,
+          res <- calculate_all_incidences_logistic(growth_rate, t0, i0, exp(pars_all["K"]),infections_total_scaled,
                                                    onset_probs, report_delay_mat,tmax)
-          }
         }
         ## Extract the 3 incidence types
         infections <- res$infections

@@ -21,6 +21,40 @@ pars <- c("growth_rate"=0.3,"K"=200000,"t0"=37,
           "wuhan_pop"=11080000, "total_travellers"=4000000,
           "incu_par1" = 1.62,"incu_par2"=0.418,
           "prob_report"=0.5)
+library(tidyverse)
+setwd("~/Documents/GitHub/covback/")
+devtools::load_all()
+
+travel_probs <- read_csv("data/raw/extracted_import_proportions.csv")
+province_key <- read_csv("data/raw/extracted_data_key.csv")
+
+## Change to 4000000 for lower travel scenario
+total_travellers <- 5000000
+wuhan_pop_ini <- 9785388
+#wuhan_pop_ini <- 11080000
+
+## Change to 2020-01-23 for lower travel scenario
+index_date_end <- as.POSIXct("2020-01-25", 
+                             format = "%Y-%m-%d", tz = "UTC")
+
+tmin <- as.POSIXct("2019-11-01",format="%Y-%m-%d", tz="UTC")
+tmax <- as.POSIXct("2020-03-03",format="%Y-%m-%d",tz="UTC")
+
+
+setwd("~/Documents/GitHub/covback/")
+## Real export probs (within China)
+export_probs <- read_csv("data/export_probs_matched.csv")$export_prob
+export_probs_lower <- read_csv("data/export_probs_lower.csv")$export_prob
+
+export_prob_dat <- read_csv("data/raw/export_probs_raw.csv")
+export_prob_dat$Date <- as.POSIXct(export_prob_dat$Date,format="%m/%d/%Y",tz="UTC")
+## Real import probs (within China)
+import_probs <- read_csv("data/import_probs_matched.csv")
+import_probs <- as.matrix(import_probs[,2:ncol(import_probs)])
+colnames(import_probs) <- NULL
+
+## Confirmed case data
+confirmed_data1 <- as.data.frame(read_csv("data/real/midas_data_final.csv"))
 
 
 tmin <- as.POSIXct("2019-11-01",format="%Y-%m-%d", tz="UTC")
@@ -128,7 +162,8 @@ zhang_dat
 
 table(zhang_dat$`exposure_Wuhan/Hubei`)
 res <- zhang_dat %>% 
-  mutate(Location = ifelse(Location %in% c("Shenzhen","Other cities in Guangdong"), "Guangdong", Location)) %>%
+  mutate(Location = ifelse(Location %in% c("Shenzhen","Other cities in Guangdong"), "Guangdong", Location),
+         Location = ifelse(Location == "Xinjiang Uygur", "Xinjiang", Location)) %>%
   group_by(Location, `exposure_Wuhan/Hubei`) %>% 
   count() %>% 
   rename(exposure=`exposure_Wuhan/Hubei`) %>% 
@@ -136,19 +171,38 @@ res <- zhang_dat %>%
   ungroup() %>%
   group_by(Location) %>%
   mutate(
-    n = (`0`+`1`+`2`),
-    n_in_hubei=`1` + `2`,
+    n = sum(`0`,`1`,`2`, na.rm=TRUE),
+    n_in_hubei=sum(`1`,`2`,na.rm=TRUE),
     n_in_wuhan = `1`,
     prop_from_wuhan=n_in_wuhan/n,
     lower_confint = ifelse(n > 1, prop.test(n_in_wuhan, n)$conf.int[1], 0),
     upper_confint = ifelse(n > 1, prop.test(n_in_wuhan, n)$conf.int[2], 1),
     prop_from_hubei=n_in_hubei/n,
+    prop_local = 1 - prop_from_hubei,
     lower_confint_hubei = ifelse(n > 1, prop.test(n_in_hubei, n)$conf.int[1], 0),
     upper_confint_hubei = ifelse(n > 1, prop.test(n_in_hubei, n)$conf.int[2], 1)
     ) %>%
-  select(Location, prop_from_wuhan, lower_confint, upper_confint,
+  select(Location, prop_local, prop_from_wuhan, lower_confint, upper_confint,
          prop_from_hubei, lower_confint_hubei, upper_confint_hubei)
-res
+
+## For every case from Hubei, how many cases are there not from Hubei?
+res <- res %>% mutate(ratio_local=(1-prop_from_hubei)/prop_from_hubei,
+                      ratio_local_wuhan = (1-prop_from_hubei)/prop_from_wuhan)
+
+use_provinces <- unique(c('Hubei','Beijing','Shanghai','Guangdong','Henan',
+                          'Tianjin','Zhejiang','Zhejiang','Hunan','Shaanxi','Jiangsu','Guangdong','Chongqing',
+                          'Jiangxi','Sichuan','Anhui','Fujian','Guangdong'))
+
+province_key <- read_csv("data/raw/extracted_data_key.csv")
+res <- res %>% filter(Location %in% province_key$province_use)
+res <- res %>% ungroup() %>% 
+  mutate(imputed_ratio = is.na(ratio_local),
+  ratio_local=ifelse(is.na(ratio_local),median(ratio_local,na.rm=TRUE),ratio_local))
+res <- res %>% mutate(just_hubei=prop_from_hubei - prop_from_wuhan) %>%
+  mutate(propn_relevant = 1 - (prop_from_hubei - prop_from_wuhan) - (prop_from_hubei-prop_from_wuhan)*prop_local) %>%
+  filter(Location %in% use_provinces)
+res %>% ggplot() + geom_point(aes(y=Location,x=ratio_local),col="red") +
+  geom_point(aes(y=Location,x=ratio_local_wuhan,col=imputed_ratio),col="blue")
 
 p2 <- res %>% ggplot() + 
   geom_pointrange(aes(x=Location, y=prop_from_wuhan,ymin=lower_confint,ymax=upper_confint), col="blue") +
