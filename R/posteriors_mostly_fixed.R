@@ -203,7 +203,7 @@ create_model_func_provinces_fixed <- function(parTab,
       ###########################################################
       ## If only one province, then you don't have anywhere to leave to
       if(n_provinces > 1) {
-        if(recalc_serial_interval) {
+        if(recalc_incubation_period) {
           daily_prob_leaving <- prob_leave_pre_symptoms_vector(leave_matrix, presymptom_probs)
         } else {
           daily_prob_leaving <- daily_prob_leaving_seed
@@ -283,6 +283,12 @@ create_model_func_provinces_fixed <- function(parTab,
         }
         infections_seed <- daily_sigmoid_interval_cpp(growth_rate, K, tmax, pars_seed["t0"])
       }
+      ## We now have number of new infections 
+      if(scale_reporting){
+        infections_seed[1:(report_rate_switch+1)] <- infections_seed[1:(report_rate_switch+1)]/report_rate_1
+        infections_seed[(report_rate_switch+2):length(infections_seed)] <- infections_seed[(report_rate_switch+2):length(infections_seed)]/report_rate_2
+      }
+      
       
       ## Storage for numbers about to be solved
       all_infections <- numeric(bigT*n_provinces)
@@ -346,6 +352,7 @@ create_model_func_provinces_fixed <- function(parTab,
           ## and then generate local_r cases over the remainder of their serial interval spent in the new province
           import_cases_local <- calculate_local_cases(daily_prob_arrival_toa, infections_seed, serial_probs, local_r)
           import_cases_local[is.na(import_cases_local)] <- 0
+          
         }
         
         ## Growth model
@@ -376,7 +383,7 @@ create_model_func_provinces_fixed <- function(parTab,
           res <- calculate_all_incidences(growth_rate, t0, i0, import_cases,onset_probs, report_delay_mat,tmax)
           ## Logistic growth model
         } else {   
-          if(scale_reporting & province != "1") {
+          if(province == "1" & scale_reporting) {
             res <- calculate_all_incidences_logistic_scale_reporting(growth_rate, t0, i0, exp(pars_all["K"]),import_cases,
                                                                      onset_probs, report_delay_mat,tmax,report_rate_switch,report_rate_1,report_rate_2)
           } else {

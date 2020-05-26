@@ -45,6 +45,8 @@ savewd <- "~/Google Drive/nCoV/backcalculation_paper/figures_final_adjusted/"
 adaptive_period <- 100000
 nsamp <- 1000
 scale_reporting <- TRUE
+report_rate_1 <- 0.14
+report_rate_2 <- 0.65
 
 n_wuhan <- 9785388
 
@@ -77,8 +79,9 @@ metrics_prevalence_30thJan <- NULL
 parameter_estimates_all <- NULL
 
 
-#run_names <- c("diffuse_r_local","main","t_switch_6")
+run_names <- c("diffuse_r_local","main","t_switch_6")
 #run_names <- c("main")
+scenario_key <- scenario_key[scenario_key$runname %in% run_names,]
 #res <- foreach(i=1:length(run_names),.packages=c("covback","lazymcmc","tidyverse",
 #                                                 "data.table","ggpubr","patchwork",
 #                                                 "coda","grid")) %dopar% {
@@ -209,8 +212,8 @@ for(i in seq_along(run_names)){
                                                   daily_import_probs = import_probs, daily_export_probs = export_probs_use,
                                                   time_varying_confirm_delay_pars = time_varying_report_pars,
                                                   nsamp=nsamp,return_draws = FALSE,model_ver="logistic",noise_ver="poisson",
-                                                  incubation_ver="lnorm",scale_reporting=FALSE, 
-                                                  report_rate_switch=83,report_rate_1=0.14,report_rate_2=0.65)
+                                                  incubation_ver="lnorm",scale_reporting=scale_reporting, 
+                                                  report_rate_switch=83,report_rate_1=report_rate_1,report_rate_2=report_rate_2)
   print("... done")
   quants_summary$date <- as.Date(quants_summary$date, origin="2019-11-01")
   quants_summary$province <- provinces[quants_summary$province]
@@ -278,9 +281,9 @@ for(i in seq_along(run_names)){
     scale_fill_manual(values=c("#E69F00","#0072B2","#009E73","#CC79A7"))+
     scale_color_manual(values=c("#E69F00","#0072B2","#009E73","#CC79A7"))+
     scale_x_date(breaks="7 days") + 
-    scale_y_continuous(expand=c(0,0),limits=c(0,0.02),breaks=seq(0,0.02,by=0.0025)) +
+    scale_y_continuous(expand=c(0,0),limits=c(0,0.1),breaks=seq(0,0.1,by=0.005)) +
     theme_bw() +
-    ylab("Daily prevalence (absolute numbers)") +
+    ylab("Daily prevalence (per capita)") +
     xlab("Date") +
     theme(axis.text.x=element_text(angle=45,hjust=1,size=7),
           axis.text.y=element_text(size=7),
@@ -383,7 +386,7 @@ for(i in seq_along(run_names)){
                                                   time_varying_confirm_delay_pars = time_varying_report_pars,
                                                   nsamp=nsamp,return_draws = TRUE,model_ver="logistic",noise_ver="poisson",
                                                   incubation_ver="lnorm",scale_reporting=scale_reporting, 
-                                          report_rate_switch=83,report_rate_1=0.14,report_rate_2=0.65)
+                                          report_rate_switch=83,report_rate_1=report_rate_1,report_rate_2=report_rate_2)
 
   quants <- quants$draws
   quants$province <- provinces[quants$province]
