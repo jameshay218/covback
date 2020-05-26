@@ -88,24 +88,14 @@ create_model_func_provinces_fixed <- function(parTab,
   ##############################################################
   ## Check if need to recalculate incubation period each iteration
   recalc_incubation_period <- TRUE
-  if((incubation_ver == "weibull" & all(parTab[parTab$names %in% c("weibull_alpha","weibull_sigma"),"fixed"] == 1)) |
-     (incubation_ver == "lnorm" & all(parTab[parTab$names %in% c("lnorm_incu_par1","lnorm_incu_par2"),"fixed"] == 1))) {
+  if((incubation_ver == "lnorm" & all(parTab[parTab$names %in% c("lnorm_incu_par1","lnorm_incu_par2"),"fixed"] == 1))) {
     recalc_incubation_period <- FALSE
-    if(incubation_ver == "weibull"){
-      weibull_alpha <- pars_all["weibull_alpha"]
-      weibull_sigma <- pars_all["weibull_sigma"]
-      ## For each day with a potential infection onset, get the probability of leaving at some point in the future before
-      ## symptom onset
-      presymptom_probs <- calculate_probs_presymptomatic_weibull(tmax, weibull_alpha, weibull_sigma)
-      onset_probs <- calculate_onset_probs_weibull(tmax, weibull_alpha, weibull_sigma)
-    } else {
-      incu_par1 <- pars_all["lnorm_incu_par1"]
-      incu_par2 <- pars_all["lnorm_incu_par2"]
-      ## For each day with a potential infection onset, get the probability of leaving at some point in the future before
-      ## symptom onset
-      presymptom_probs <- calculate_probs_presymptomatic_lnorm(tmax, incu_par1, incu_par2)
-      onset_probs <- calculate_onset_probs_lnorm(tmax, incu_par1, incu_par2)
-    }
+    incu_par1 <- pars_all["lnorm_incu_par1"]
+    incu_par2 <- pars_all["lnorm_incu_par2"]
+    ## For each day with a potential infection onset, get the probability of leaving at some point in the future before
+    ## symptom onset
+    presymptom_probs <- calculate_probs_presymptomatic_lnorm(tmax, incu_par1, incu_par2)
+    onset_probs <- calculate_onset_probs_lnorm(tmax, incu_par1, incu_par2)
     if(n_provinces > 1){
       ## This is used to get probability of arriving pre-symptomatic, used for calculation of local cases
       daily_prob_leaving_seed <- prob_leave_pre_symptoms_vector(leave_matrix, presymptom_probs)
@@ -135,7 +125,6 @@ create_model_func_provinces_fixed <- function(parTab,
     serial_interval_scale <- serial_pars[[2]]
     
     serial_probs <- calculate_serial_interval_probs(tmax, serial_interval_alpha, serial_interval_scale)
-   
   }
 
   model_func <- function(pars_all) {
