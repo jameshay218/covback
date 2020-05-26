@@ -9,6 +9,8 @@ chain_save_wd <- "~/Documents/GitHub/covback_chains_final/final_20200522/"
 
 ## Either load package locally or install from github
 setwd("~/Documents/GitHub/covback/")
+Rcpp::compileAttributes()
+devtools::document()
 devtools::load_all()
 #install.packages("~/Documents/GitHub/covback/",repos=NULL,type="source")
 #library(covback)

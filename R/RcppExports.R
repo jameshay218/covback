@@ -65,8 +65,8 @@ local_travel_matrix_precalc <- function(prob_arrival_mat) {
     .Call('_covback_local_travel_matrix_precalc', PACKAGE = 'covback', prob_arrival_mat)
 }
 
-calculate_local_cases <- function(precalc_local, infections, serial_probs, r_local) {
-    .Call('_covback_calculate_local_cases', PACKAGE = 'covback', precalc_local, infections, serial_probs, r_local)
+calculate_local_infections <- function(precalc_local, infections, serial_probs, r_local) {
+    .Call('_covback_calculate_local_infections', PACKAGE = 'covback', precalc_local, infections, serial_probs, r_local)
 }
 
 calculate_infection_prevalence_local <- function(incidence, prob_presymptomatic) {
@@ -123,15 +123,15 @@ calculate_confirmation_incidence <- function(onsets, tmax, report_delay_mat) {
     .Call('_covback_calculate_confirmation_incidence', PACKAGE = 'covback', onsets, tmax, report_delay_mat)
 }
 
-calculate_all_incidences <- function(growth_rate, t0, i0, import_cases, onset_probs, report_delay_mat, tmax) {
-    .Call('_covback_calculate_all_incidences', PACKAGE = 'covback', growth_rate, t0, i0, import_cases, onset_probs, report_delay_mat, tmax)
+calculate_all_incidences <- function(growth_rate, t0, i0, import_infections, onset_probs, report_delay_mat, tmax) {
+    .Call('_covback_calculate_all_incidences', PACKAGE = 'covback', growth_rate, t0, i0, import_infections, onset_probs, report_delay_mat, tmax)
 }
 
-calculate_all_incidences_logistic <- function(growth_rate, t0, i0, K, import_cases, onset_probs, report_delay_mat, tmax) {
-    .Call('_covback_calculate_all_incidences_logistic', PACKAGE = 'covback', growth_rate, t0, i0, K, import_cases, onset_probs, report_delay_mat, tmax)
+calculate_all_incidences_logistic <- function(growth_rate, t0, i0, K, import_infections, onset_probs, report_delay_mat, tmax) {
+    .Call('_covback_calculate_all_incidences_logistic', PACKAGE = 'covback', growth_rate, t0, i0, K, import_infections, onset_probs, report_delay_mat, tmax)
 }
 
-calculate_all_incidences_logistic_scale_reporting <- function(growth_rate, t0, i0, K, import_cases, onset_probs, report_delay_mat, tmax, reporting_switch, report_rate_1, report_rate_2) {
-    .Call('_covback_calculate_all_incidences_logistic_scale_reporting', PACKAGE = 'covback', growth_rate, t0, i0, K, import_cases, onset_probs, report_delay_mat, tmax, reporting_switch, report_rate_1, report_rate_2)
+calculate_all_incidences_logistic_scale_reporting <- function(growth_rate, t0, i0, K, import_infections, onset_probs, report_delay_mat, tmax, reporting_switch, report_rate_1, report_rate_2) {
+    .Call('_covback_calculate_all_incidences_logistic_scale_reporting', PACKAGE = 'covback', growth_rate, t0, i0, K, import_infections, onset_probs, report_delay_mat, tmax, reporting_switch, report_rate_1, report_rate_2)
 }
 

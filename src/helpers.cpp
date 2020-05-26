@@ -242,22 +242,22 @@ NumericMatrix local_travel_matrix_precalc(NumericMatrix prob_arrival_mat){
 // LOCAL TRANSMISSION
 /////////////////////////////////////
 //[[Rcpp::export]]
-NumericVector calculate_local_cases(NumericMatrix precalc_local, NumericVector infections, 
+NumericVector calculate_local_infections(NumericMatrix precalc_local, NumericVector infections, 
                                     NumericVector serial_probs, double r_local){
   int tmax = infections.size();
-  NumericVector local_cases(tmax);
+  NumericVector local_infections(tmax);
   // For all times
   for(int t = 0; t < tmax; ++t){
     // Sum up infections that were generated on each day in the past,
-    // find the expected number of secondary cases that they generate. 
+    // find the expected number of secondary infections that they generate. 
     // This is the serial interval distribution multiplied by the probability that
     // they are in that location on that day post infection
     for(int i = 0; i <= t; ++i){
-      local_cases[t] += infections[i]*serial_probs[t-i]*precalc_local(t,i);
+      local_infections[t] += infections[i]*serial_probs[t-i]*precalc_local(t,i);
     }
-    local_cases[t] *= r_local;
+    local_infections[t] *= r_local;
   }
-  return(local_cases);
+  return(local_infections);
 }
 
 

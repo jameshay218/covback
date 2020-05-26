@@ -16,7 +16,6 @@ create_model_func_provinces_fixed <- function(parTab,
                                               report_rate_switch=83,
                                               report_rate_1=0.14,
                                               report_rate_2=0.85){
-  browser()
   par_names <- parTab$names
   par_provinces <- parTab$province
   unique_provinces <- unique(parTab$province)
@@ -177,7 +176,7 @@ create_model_func_provinces_fixed <- function(parTab,
       }
       
       ###########################################################
-      ## iii) get serial interval distribution to generate secondary cases over
+      ## iii) get serial interval distribution to generate secondary infections over
       ###########################################################
       if(recalc_serial_interval){
         ## Serial interval
@@ -301,19 +300,19 @@ create_model_func_provinces_fixed <- function(parTab,
         ## Get parameters that apply to this province
         pars <- pars_all[which(par_provinces %in% c("all",province))]
         
-        ## Proportion of seed cases that will get exported
-        ## If province 1, then export_propn cases are lost
-        ## Otherwise, some proportion of these lost cases are gained elsewhere
+        ## Proportion of seed infections that will get exported
+        ## If province 1, then export_propn infections are lost
+        ## Otherwise, some proportion of these lost infections are gained elsewhere
         if(province == "1") {
-          ## Cases that leave seed province
-          import_cases_time_of_infection <- -1 * daily_prob_leaving * infections_seed
+          ## infections that leave seed province
+          import_infections_time_of_infection <- -1 * daily_prob_leaving * infections_seed
           t0 <- pars_seed["t0"]
-          import_cases_local <- numeric(length(import_cases_time_of_infection))
+          infections_local <- numeric(length(import_infections_time_of_infection))
         } else {
           ## If we re-calcualted the incubation period, need to recalculate the probabilities of arriving
           ## presymptomatic. Otherwise, can use pre-computed values
           if(recalc_incubation_period){
-            ## Otherwise, cases that come from seed province
+            ## Otherwise, infections that come from seed province
             prob_arrival_matrix <- prob_arrive_pre_symptoms(arrival_matrices[[index]],presymptom_probs)
             
             daily_prob_arrival_toi <- prob_arrive_pre_symptoms_vector(arrival_matrices[[index]], presymptom_probs)
@@ -325,8 +324,8 @@ create_model_func_provinces_fixed <- function(parTab,
           
           ## This gives number of imported case **at the time that they got infected**
           ## For the backcalculation, we need time of infection. But for calculating
-          ## local cases and prevalence we need time of arrival in destination.
-          import_cases_time_of_infection <- daily_prob_arrival_toi * infections_seed
+          ## local infections and prevalence we need time of arrival in destination.
+          import_infections_time_of_infection <- daily_prob_arrival_toi * infections_seed
           
           ## t0 is days since t0 in seed province
           t0_import <- pars_seed["t0"]
@@ -338,10 +337,10 @@ create_model_func_provinces_fixed <- function(parTab,
           
           ## Solve model for this province
           local_r <- pars["local_r"]
-          ## This finds the number of locally generated cases. We find the time that infections in the seed location arrive,
-          ## and then generate local_r cases over the remainder of their serial interval spent in the new province
-          import_cases_local <- calculate_local_cases(daily_prob_arrival_toa, infections_seed, serial_probs, local_r)
-          import_cases_local[is.na(import_cases_local)] <- 0
+          ## This finds the number of locally generated infections We find the time that infections in the seed location arrive,
+          ## and then generate local_r infections over the remainder of their serial interval spent in the new province
+          infections_local <- calculate_local_infections(daily_prob_arrival_toa, infections_seed, serial_probs, local_r)
+          infections_local[is.na(infections_local)] <- 0
           
         }
         
@@ -365,19 +364,19 @@ create_model_func_provinces_fixed <- function(parTab,
           i0 <- 0
         }
         
-        ## Total number of cases is number of locally generated cases plus imported cases
-        import_cases <- import_cases_time_of_infection + import_cases_local
+        ## Total number of infections is number of locally generated infections plus imported infections
+        infections_total <- import_infections_time_of_infection + infections_local
         
         ## Exponential growth model
         if(model_ver == "exp") {
-          res <- calculate_all_incidences(growth_rate, t0, i0, import_cases,onset_probs, report_delay_mat,tmax)
+          res <- calculate_all_incidences(growth_rate, t0, i0, infections_total,onset_probs, report_delay_mat,tmax)
           ## Logistic growth model
         } else {   
           if(province == "1" & scale_reporting) {
-            res <- calculate_all_incidences_logistic_scale_reporting(growth_rate, t0, i0, exp(pars_all["K"]),import_cases,
+            res <- calculate_all_incidences_logistic_scale_reporting(growth_rate, t0, i0, exp(pars_all["K"]),infections_total,
                                                                      onset_probs, report_delay_mat,tmax,report_rate_switch,report_rate_1,report_rate_2)
           } else {
-            res <- calculate_all_incidences_logistic(growth_rate, t0, i0, exp(pars_all["K"]),import_cases,
+            res <- calculate_all_incidences_logistic(growth_rate, t0, i0, exp(pars_all["K"]),infections_total,
                                                    onset_probs, report_delay_mat,tmax)
           }
         }
@@ -392,8 +391,8 @@ create_model_func_provinces_fixed <- function(parTab,
         all_onsets[indices] <- onsets
         
         all_confirmations[indices] <- confirmations
-        all_local_infections[indices] <- import_cases_local
-        all_imported_infections[indices] <- import_cases_time_of_infection
+        all_local_infections[indices] <- infections_local
+        all_imported_infections[indices] <- import_infections_time_of_infection
         
         if(calculate_prevalence){
           if(n_provinces > 1){
@@ -403,7 +402,7 @@ create_model_func_provinces_fixed <- function(parTab,
                                                                                           prob_not_left_matrix)
               tmp_presymptomatic_prevalence_imported <- numeric(tmax+1)
             } else {
-              tmp_presymptomatic_prevalence_local <- calculate_infection_prevalence_local(import_cases_local, presymptom_probs)
+              tmp_presymptomatic_prevalence_local <- calculate_infection_prevalence_local(infections_local, presymptom_probs)
               tmp_presymptomatic_prevalence_imported <- calculate_infection_prevalence_imported(infections_seed, 
                                                                                                 presymptom_probs, daily_prob_arrival_toa)
             }

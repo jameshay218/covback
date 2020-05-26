@@ -203,9 +203,9 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// calculate_local_cases
-NumericVector calculate_local_cases(NumericMatrix precalc_local, NumericVector infections, NumericVector serial_probs, double r_local);
-RcppExport SEXP _covback_calculate_local_cases(SEXP precalc_localSEXP, SEXP infectionsSEXP, SEXP serial_probsSEXP, SEXP r_localSEXP) {
+// calculate_local_infections
+NumericVector calculate_local_infections(NumericMatrix precalc_local, NumericVector infections, NumericVector serial_probs, double r_local);
+RcppExport SEXP _covback_calculate_local_infections(SEXP precalc_localSEXP, SEXP infectionsSEXP, SEXP serial_probsSEXP, SEXP r_localSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -213,7 +213,7 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< NumericVector >::type infections(infectionsSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type serial_probs(serial_probsSEXP);
     Rcpp::traits::input_parameter< double >::type r_local(r_localSEXP);
-    rcpp_result_gen = Rcpp::wrap(calculate_local_cases(precalc_local, infections, serial_probs, r_local));
+    rcpp_result_gen = Rcpp::wrap(calculate_local_infections(precalc_local, infections, serial_probs, r_local));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -388,25 +388,25 @@ BEGIN_RCPP
 END_RCPP
 }
 // calculate_all_incidences
-List calculate_all_incidences(double growth_rate, double t0, double i0, NumericVector import_cases, NumericVector onset_probs, NumericMatrix report_delay_mat, int tmax);
-RcppExport SEXP _covback_calculate_all_incidences(SEXP growth_rateSEXP, SEXP t0SEXP, SEXP i0SEXP, SEXP import_casesSEXP, SEXP onset_probsSEXP, SEXP report_delay_matSEXP, SEXP tmaxSEXP) {
+List calculate_all_incidences(double growth_rate, double t0, double i0, NumericVector import_infections, NumericVector onset_probs, NumericMatrix report_delay_mat, int tmax);
+RcppExport SEXP _covback_calculate_all_incidences(SEXP growth_rateSEXP, SEXP t0SEXP, SEXP i0SEXP, SEXP import_infectionsSEXP, SEXP onset_probsSEXP, SEXP report_delay_matSEXP, SEXP tmaxSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< double >::type growth_rate(growth_rateSEXP);
     Rcpp::traits::input_parameter< double >::type t0(t0SEXP);
     Rcpp::traits::input_parameter< double >::type i0(i0SEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type import_cases(import_casesSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type import_infections(import_infectionsSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type onset_probs(onset_probsSEXP);
     Rcpp::traits::input_parameter< NumericMatrix >::type report_delay_mat(report_delay_matSEXP);
     Rcpp::traits::input_parameter< int >::type tmax(tmaxSEXP);
-    rcpp_result_gen = Rcpp::wrap(calculate_all_incidences(growth_rate, t0, i0, import_cases, onset_probs, report_delay_mat, tmax));
+    rcpp_result_gen = Rcpp::wrap(calculate_all_incidences(growth_rate, t0, i0, import_infections, onset_probs, report_delay_mat, tmax));
     return rcpp_result_gen;
 END_RCPP
 }
 // calculate_all_incidences_logistic
-List calculate_all_incidences_logistic(double growth_rate, double t0, double i0, double K, NumericVector import_cases, NumericVector onset_probs, NumericMatrix report_delay_mat, int tmax);
-RcppExport SEXP _covback_calculate_all_incidences_logistic(SEXP growth_rateSEXP, SEXP t0SEXP, SEXP i0SEXP, SEXP KSEXP, SEXP import_casesSEXP, SEXP onset_probsSEXP, SEXP report_delay_matSEXP, SEXP tmaxSEXP) {
+List calculate_all_incidences_logistic(double growth_rate, double t0, double i0, double K, NumericVector import_infections, NumericVector onset_probs, NumericMatrix report_delay_mat, int tmax);
+RcppExport SEXP _covback_calculate_all_incidences_logistic(SEXP growth_rateSEXP, SEXP t0SEXP, SEXP i0SEXP, SEXP KSEXP, SEXP import_infectionsSEXP, SEXP onset_probsSEXP, SEXP report_delay_matSEXP, SEXP tmaxSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -414,17 +414,17 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< double >::type t0(t0SEXP);
     Rcpp::traits::input_parameter< double >::type i0(i0SEXP);
     Rcpp::traits::input_parameter< double >::type K(KSEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type import_cases(import_casesSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type import_infections(import_infectionsSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type onset_probs(onset_probsSEXP);
     Rcpp::traits::input_parameter< NumericMatrix >::type report_delay_mat(report_delay_matSEXP);
     Rcpp::traits::input_parameter< int >::type tmax(tmaxSEXP);
-    rcpp_result_gen = Rcpp::wrap(calculate_all_incidences_logistic(growth_rate, t0, i0, K, import_cases, onset_probs, report_delay_mat, tmax));
+    rcpp_result_gen = Rcpp::wrap(calculate_all_incidences_logistic(growth_rate, t0, i0, K, import_infections, onset_probs, report_delay_mat, tmax));
     return rcpp_result_gen;
 END_RCPP
 }
 // calculate_all_incidences_logistic_scale_reporting
-List calculate_all_incidences_logistic_scale_reporting(double growth_rate, double t0, double i0, double K, NumericVector import_cases, NumericVector onset_probs, NumericMatrix report_delay_mat, int tmax, int reporting_switch, double report_rate_1, double report_rate_2);
-RcppExport SEXP _covback_calculate_all_incidences_logistic_scale_reporting(SEXP growth_rateSEXP, SEXP t0SEXP, SEXP i0SEXP, SEXP KSEXP, SEXP import_casesSEXP, SEXP onset_probsSEXP, SEXP report_delay_matSEXP, SEXP tmaxSEXP, SEXP reporting_switchSEXP, SEXP report_rate_1SEXP, SEXP report_rate_2SEXP) {
+List calculate_all_incidences_logistic_scale_reporting(double growth_rate, double t0, double i0, double K, NumericVector import_infections, NumericVector onset_probs, NumericMatrix report_delay_mat, int tmax, int reporting_switch, double report_rate_1, double report_rate_2);
+RcppExport SEXP _covback_calculate_all_incidences_logistic_scale_reporting(SEXP growth_rateSEXP, SEXP t0SEXP, SEXP i0SEXP, SEXP KSEXP, SEXP import_infectionsSEXP, SEXP onset_probsSEXP, SEXP report_delay_matSEXP, SEXP tmaxSEXP, SEXP reporting_switchSEXP, SEXP report_rate_1SEXP, SEXP report_rate_2SEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -432,14 +432,14 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< double >::type t0(t0SEXP);
     Rcpp::traits::input_parameter< double >::type i0(i0SEXP);
     Rcpp::traits::input_parameter< double >::type K(KSEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type import_cases(import_casesSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type import_infections(import_infectionsSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type onset_probs(onset_probsSEXP);
     Rcpp::traits::input_parameter< NumericMatrix >::type report_delay_mat(report_delay_matSEXP);
     Rcpp::traits::input_parameter< int >::type tmax(tmaxSEXP);
     Rcpp::traits::input_parameter< int >::type reporting_switch(reporting_switchSEXP);
     Rcpp::traits::input_parameter< double >::type report_rate_1(report_rate_1SEXP);
     Rcpp::traits::input_parameter< double >::type report_rate_2(report_rate_2SEXP);
-    rcpp_result_gen = Rcpp::wrap(calculate_all_incidences_logistic_scale_reporting(growth_rate, t0, i0, K, import_cases, onset_probs, report_delay_mat, tmax, reporting_switch, report_rate_1, report_rate_2));
+    rcpp_result_gen = Rcpp::wrap(calculate_all_incidences_logistic_scale_reporting(growth_rate, t0, i0, K, import_infections, onset_probs, report_delay_mat, tmax, reporting_switch, report_rate_1, report_rate_2));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -461,7 +461,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_covback_prob_arrive_pre_symptoms", (DL_FUNC) &_covback_prob_arrive_pre_symptoms, 2},
     {"_covback_prob_arrive_pre_symptoms_vector", (DL_FUNC) &_covback_prob_arrive_pre_symptoms_vector, 2},
     {"_covback_local_travel_matrix_precalc", (DL_FUNC) &_covback_local_travel_matrix_precalc, 1},
-    {"_covback_calculate_local_cases", (DL_FUNC) &_covback_calculate_local_cases, 4},
+    {"_covback_calculate_local_infections", (DL_FUNC) &_covback_calculate_local_infections, 4},
     {"_covback_calculate_infection_prevalence_local", (DL_FUNC) &_covback_calculate_infection_prevalence_local, 2},
     {"_covback_calculate_infection_prevalence_imported", (DL_FUNC) &_covback_calculate_infection_prevalence_imported, 3},
     {"_covback_calculate_infection_prevalence_hubei", (DL_FUNC) &_covback_calculate_infection_prevalence_hubei, 3},

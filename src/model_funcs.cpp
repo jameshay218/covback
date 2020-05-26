@@ -142,16 +142,16 @@ NumericVector calculate_confirmation_incidence(NumericVector onsets, int tmax,Nu
   return(confirmations);
 }
 //[[Rcpp::export]]
-List calculate_all_incidences(double growth_rate, double t0, double i0, NumericVector import_cases,
+List calculate_all_incidences(double growth_rate, double t0, double i0, NumericVector import_infections,
                               NumericVector onset_probs, NumericMatrix report_delay_mat,
                               int tmax){
   NumericVector infections;
   
   if(i0 > 0){
     infections = i0*daily_exp_interval_cpp(growth_rate, tmax, t0);
-    infections = infections + import_cases;
+    infections = infections + import_infections;
   } else {
-    infections = import_cases;
+    infections = import_infections;
   }
   
   NumericVector onsets = calculate_onset_incidence(infections, onset_probs, tmax);
@@ -165,16 +165,16 @@ List calculate_all_incidences(double growth_rate, double t0, double i0, NumericV
 //[[Rcpp::export]]
 List calculate_all_incidences_logistic(double growth_rate, double t0, double i0,
                                        double K,
-                                       NumericVector import_cases,
+                                       NumericVector import_infections,
 			      NumericVector onset_probs, NumericMatrix report_delay_mat,
                               int tmax){
   NumericVector infections;
  
   if(i0 > 0){
     infections = daily_sigmoid_interval_cpp(growth_rate, K, tmax, t0);
-    infections = infections + import_cases;
+    infections = infections + import_infections;
   } else {
-    infections = import_cases;
+    infections = import_infections;
   }
   
   NumericVector onsets = calculate_onset_incidence(infections, onset_probs, tmax);
@@ -187,16 +187,16 @@ List calculate_all_incidences_logistic(double growth_rate, double t0, double i0,
 //[[Rcpp::export]]
 List calculate_all_incidences_logistic_scale_reporting(double growth_rate, double t0, double i0,
                                        double K,
-                                       NumericVector import_cases,
+                                       NumericVector import_infections,
                                        NumericVector onset_probs, NumericMatrix report_delay_mat,
                                        int tmax, int reporting_switch, double report_rate_1, double report_rate_2){
   NumericVector infections;
   
   if(i0 > 0){
     infections = daily_sigmoid_interval_cpp(growth_rate, K, tmax, t0);
-    infections = infections + import_cases;
+    infections = infections + import_infections;
   } else {
-    infections = import_cases;
+    infections = import_infections;
   }
   infections[Range(0,reporting_switch)] = infections[Range(0,reporting_switch)]/report_rate_1;
   infections[Range(reporting_switch+1,infections.size())] = infections[Range(reporting_switch+1,infections.size())]/report_rate_2;
