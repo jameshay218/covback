@@ -1,22 +1,3 @@
-new_model_func <- function(pars, t, tmax=100){
-  
-  # 1. How much growth is there in Wuhan?
-  r <- pars["growth_rate"]
-  K <- pars["K"]
-  t0 <- pars["t0"]
-  tmax <- 100
-  
-  I_t <- numeric(tmax)
-  t <- seq(0, tmax-t0, by=1)
-  
-  I_t_lead <- K / ( 1 + ( K - 1 ) * exp( -r * (t+1) ) )
-  I_t_lag <- K / ( 1 + ( K - 1 ) * exp ( -r * t) )
-  
-  I_t[t0:tmax] <- I_t_lead - I_t_lag
-  I_t
-  
-}
-
 pars <- c("growth_rate"=0.3,"K"=200000,"t0"=37,
           "wuhan_pop"=11080000, "total_travellers"=4000000,
           "incu_par1" = 1.62,"incu_par2"=0.418,
@@ -86,7 +67,7 @@ solve <- function(pars){
   tmp <- create_export_prob_matrix(total_travellers, wuhan_pop_ini, export_prob_dat, tmin, tmax,
                                             index_date_end=index_date_end)
   ## This is the daily probability of someone leaving Wuhan
-  export_probs <- tmp$probs
+  export_probs <- tmp$probs_within_china
   
   ## Given infection on day i (row), what's the probability of leaving on each day in the future, j (col)?
   leave_matrix <- prob_leave_on_day(export_probs, duration)
@@ -101,7 +82,7 @@ solve <- function(pars){
 }
 res <- solve(pars)
 
-growth_rates <- seq(0.05,0.5,by=0.01)
+growth_rates <- seq(0.1,0.5,by=0.01)
 Ks <- seq(100000,3000000,by=100000)
 total_travellers <- seq(5000000,5000000,by=500000)
 start_times <- c(37)
@@ -138,7 +119,8 @@ final <- tibble(growth_rate=all_pars[,1], K=all_pars[,2], travellers=all_pars[,3
 
 works <- final %>% filter(peak_times >= as.Date("2020-01-18") & peak_times <= as.Date("2020-01-23") &
                    exported_cases < 8400*1.1 & exported_cases > 8400*0.9)
-p1 <- ggplot(works) + geom_tile(aes(x=report_rate,y=final_sizes,fill=growth_rate)) + scale_fill_viridis_c(limits=c(0.25,0.35)) +
+p1 <- ggplot(works) + 
+  geom_tile(aes(x=report_rate,y=final_sizes,fill=growth_rate)) + scale_fill_viridis_c(limits=c(0.25,0.35)) +
   theme_bw() +
   scale_x_continuous(limits=c(0.05,1.05),breaks=seq(0.1,1,by=0.1)) +
   scale_y_continuous(limits=c(0,0.3),breaks=seq(0,0.3,by=0.05)) +
@@ -204,6 +186,10 @@ res <- res %>% mutate(just_hubei=prop_from_hubei - prop_from_wuhan) %>%
 res %>% ggplot() + geom_point(aes(y=Location,x=ratio_local),col="red") +
   geom_point(aes(y=Location,x=ratio_local_wuhan,col=imputed_ratio),col="blue")
 
+r_locals <- res %>% select(Location, ratio_local) %>% rename(province_use = Location)
+r_locals$province_use <- factor(r_locals$province_use, levels=province_key$province_use)
+r_locals <- r_locals %>% arrange(province_use)
+
 p2 <- res %>% ggplot() + 
   geom_pointrange(aes(x=Location, y=prop_from_wuhan,ymin=lower_confint,ymax=upper_confint), col="blue") +
   geom_pointrange(aes(x=Location, y=prop_from_hubei,ymin=lower_confint_hubei,ymax=upper_confint_hubei), col="red") +
@@ -228,10 +214,76 @@ tmp <- zhang_dat %>%
                      stage=onset_date < as.Date("2020/01/27")) %>% 
   select(ID, onset_date, report_date,report_delay, stage) %>% drop_na()
 
-p3 <- tmp %>% group_by(onset_date) %>% 
+mean_delays_by_report <- tmp %>% group_by(report_date) %>% 
   summarise(n=n(),mean_delay=mean(report_delay),sd_delay=sd(report_delay),
             lower_confint = mean_delay - 1.96*(sd_delay/sqrt(n)),
-            upper_confint = mean_delay + 1.96*(sd_delay/sqrt(n))) %>% 
+            upper_confint = mean_delay + 1.96*(sd_delay/sqrt(n))) 
+
+mean_delays_by_onset <- tmp %>% group_by(onset_date) %>% 
+  summarise(n=n(),mean_delay=mean(report_delay),sd_delay=sd(report_delay),
+            lower_confint = mean_delay - 1.96*(sd_delay/sqrt(n)),
+            upper_confint = mean_delay + 1.96*(sd_delay/sqrt(n))) 
+
+changing_delay_by_report <-  ggplot(tmp,aes(x=report_date,y=report_delay)) + 
+  geom_jitter(size=0.25,width = 0.1,height=0.1) +
+  geom_smooth() +
+  coord_cartesian(ylim=c(0,30)) +
+  geom_vline(xintercept=as.Date("2020-01-27",origin="2019-11-01"),col="red",size=1) +
+  geom_vline(xintercept=as.Date("2020-01-23",origin="2019-11-01"),col="green",size=0.5,linetype="dashed") +
+  geom_segment(data=data.frame(x1=as.Date("2019-12-29",origin="2020-11-01"), 
+                               x2 = as.Date("2020-01-27",origin="2020-11-01"),
+                               y1 = 8.86, 
+                               y2 = 8.86), 
+               aes(x=x1, xend=x2, y=y1, yend=y2),col="orange",size=1) +
+  geom_segment(data=data.frame(x1=as.Date("2020-01-27",origin="2020-11-01"), 
+                               x2 = as.Date("2020-02-16",origin="2020-11-01"),
+                               y1 = 5.39, 
+                               y2 = 5.39), 
+               aes(x=x1, xend=x2, y=y1, yend=y2),col="orange",size=1) +
+  xlab("Date of report onset") +
+  ylab("Delay from symptom onset to report") +
+  ggtitle("Delay going backward. For a case reported on day t, how long ago did they report symptom onset?") +
+  theme_bw()+
+  theme(title=element_text(size=8))
+
+changing_delay_by_onset <- 
+  ggplot(tmp,aes(x=onset_date,y=report_delay)) + 
+  geom_jitter(size=0.25,width = 0.1,height=0.1) +
+  geom_smooth() +
+  coord_cartesian(ylim=c(0,30)) +
+  geom_vline(xintercept=as.Date("2020-01-27",origin="2019-11-01"),col="red",size=1) +
+  geom_vline(xintercept=as.Date("2020-01-23",origin="2019-11-01"),col="green",size=0.5,linetype="dashed") +
+  geom_segment(data=data.frame(x1=as.Date("2019-12-29",origin="2020-11-01"), 
+                               x2 = as.Date("2020-01-27",origin="2020-11-01"),
+                               y1 = 8.86, 
+                               y2 = 8.86), 
+               aes(x=x1, xend=x2, y=y1, yend=y2),col="orange",size=1) +
+  geom_segment(data=data.frame(x1=as.Date("2020-01-27",origin="2020-11-01"), 
+                               x2 = as.Date("2020-02-16",origin="2020-11-01"),
+                               y1 = 5.39, 
+                               y2 = 5.39), 
+               aes(x=x1, xend=x2, y=y1, yend=y2),col="orange",size=1) +
+  xlab("Date of symptom onset") +
+  ylab("Delay from symptom onset to report") +
+  ggtitle("Delay going forward. For a symptom onset on day t, how long did it take to get confirmed?") +
+  theme_bw() +
+  theme(title=element_text(size=8))
+
+spline_by_onset <- ggplot_build(changing_delay_by_onset)$data[[2]] %>% select(x, y) %>% mutate(x = as.Date(x, origin="1970-01-01"))
+spline_by_onset$direction <- "forward"
+colnames(spline_by_onset) <- c("date","mean_delay","direction")
+spline_by_report <- ggplot_build(changing_delay_by_report)$data[[2]] %>% select(x, y) %>% mutate(x = as.Date(x, origin="1970-01-01"))
+spline_by_report$direction <- "backward"
+colnames(spline_by_report) <- c("date","mean_delay","direction")
+
+all_splines <- bind_rows(spline_by_onset, spline_by_report)
+write_csv(all_splines, "~/Documents/delays.csv")
+
+png("~/Documents/changing_delay.png",width=8,height=8,res=300,units="in")
+changing_delay_by_report/changing_delay_by_onset
+dev.off()
+
+p3 <- mean_delays %>% 
   filter(n > 10) %>%
   ggplot() +
   #geom_pointrange(aes(x=onset_date, ymin=lower_confint,ymax=upper_confint,y=mean_delay)) +

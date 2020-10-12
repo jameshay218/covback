@@ -242,7 +242,7 @@ create_model_func_provinces_fixed <- function(parTab,
        }
        t_unknown <- t_unknown - 1
        return(t_unknown)
-     }
+        }
       # ## T-switch is based on symptom onsets. So t-switch (peak) for infections is
       # ## peak of symptom onsets minus mode of incubation period distribution
        t_offset <- find_tswitch_offset()
@@ -358,7 +358,17 @@ create_model_func_provinces_fixed <- function(parTab,
         infections_total <- import_infections_time_of_infection + infections_local
         
         ## Scale for reporting prob
-        infections_total_scaled <- infections_total*pars["ascertainment_rate"]
+        infections_total_scaled <- infections_total
+        import_infections_time_of_infection1 <- import_infections_time_of_infection
+        if(province != "1"){
+          range1 <- 1:(pars_all["report_t_switch"])
+          range2 <- (pars_all["report_t_switch"]+1):length(infections_total_scaled)
+          infections_total_scaled[range1] <- infections_total[range1]*pars["ascertainment_rate_1"]
+          infections_total_scaled[range2] <- infections_total[range2]*pars["ascertainment_rate_2"]*pars["ascertainment_rate_1"]
+          
+          import_infections_time_of_infection1[range1] <- import_infections_time_of_infection1[range1]*pars["ascertainment_rate_1"]
+          import_infections_time_of_infection1[range2] <- import_infections_time_of_infection1[range2]*pars["ascertainment_rate_2"]*pars["ascertainment_rate_1"]
+        }
         
         ## Exponential growth model
         if(model_ver == "exp") {
@@ -380,7 +390,7 @@ create_model_func_provinces_fixed <- function(parTab,
         
         all_confirmations[indices] <- confirmations
         all_local_infections[indices] <- infections_local
-        all_imported_infections[indices] <- import_infections_time_of_infection
+        all_imported_infections[indices] <- import_infections_time_of_infection1
         
         if(calculate_prevalence){
           if(n_provinces > 1){
@@ -419,6 +429,7 @@ create_model_func_provinces_fixed <- function(parTab,
         }
         
       }
+      #print(paste0("Total imported infections: ", sum(all_imported_infections[all_imported_infections > 0])))
       ## Once done, combined all of the provinces into one tibble
       all_dat <- data %>% bind_cols(infections=all_infections, onsets=all_onsets, confirmations=all_confirmations,
                                     local_infections=all_local_infections, imported_infections=all_imported_infections)

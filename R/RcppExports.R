@@ -93,6 +93,10 @@ calculate_unrecovered_prevalence <- function(onsets, prob_not_recovered) {
     .Call('_covback_calculate_unrecovered_prevalence', PACKAGE = 'covback', onsets, prob_not_recovered)
 }
 
+calculate_preconfirmation_prevalence_from_infections <- function(infections, incu_par1, incu_par2, alphas, scales) {
+    .Call('_covback_calculate_preconfirmation_prevalence_from_infections', PACKAGE = 'covback', infections, incu_par1, incu_par2, alphas, scales)
+}
+
 #' @export
 daily_sigmoid_interval_cpp <- function(growth, i_max, tmax, t0) {
     .Call('_covback_daily_sigmoid_interval_cpp', PACKAGE = 'covback', growth, i_max, tmax, t0)

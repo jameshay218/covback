@@ -100,7 +100,6 @@ create_export_prob_matrix <- function(total_travellers, wuhan_pop_ini,
                                       date_start, date_end,
                                       index_date_start=as.POSIXct("2020-01-10", format="%Y-%m-%d",tz="UTC"), 
                                       index_date_end=as.POSIXct("2020-01-25", format="%Y-%m-%d",tz="UTC")){
-  
   times <- seq(date_start, date_end,by="1 day")
   ## Total emigration index
   emigration_indices <- export_dat %>% 
@@ -130,12 +129,17 @@ create_export_prob_matrix <- function(total_travellers, wuhan_pop_ini,
   
   ## Convert number that left Wuhan to proportion that left Wuhan
   export_probs <- export_dat$total_left/total_pop
+  export_probs_china <- export_dat$prop_export/total_pop
   
   probs <- numeric(length(times))
   probs[which(times < min(export_dat$Date))] <- export_probs[1]
   probs[match(export_dat$Date, times)] <- export_probs
   
-  return(list(probs=probs,total_pop=total_pop))
+  probs_china <- numeric(length(times))
+  probs_china[which(times < min(export_dat$Date))] <- export_probs_china[1]
+  probs_china[match(export_dat$Date, times)] <- export_probs_china
+  
+  return(list(probs=probs,total_pop=total_pop, probs_within_china=probs_china))
 }
 
 #' @export

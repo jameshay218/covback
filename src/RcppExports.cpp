@@ -292,6 +292,21 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// calculate_preconfirmation_prevalence_from_infections
+NumericVector calculate_preconfirmation_prevalence_from_infections(NumericVector infections, double incu_par1, double incu_par2, NumericVector alphas, NumericVector scales);
+RcppExport SEXP _covback_calculate_preconfirmation_prevalence_from_infections(SEXP infectionsSEXP, SEXP incu_par1SEXP, SEXP incu_par2SEXP, SEXP alphasSEXP, SEXP scalesSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericVector >::type infections(infectionsSEXP);
+    Rcpp::traits::input_parameter< double >::type incu_par1(incu_par1SEXP);
+    Rcpp::traits::input_parameter< double >::type incu_par2(incu_par2SEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type alphas(alphasSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type scales(scalesSEXP);
+    rcpp_result_gen = Rcpp::wrap(calculate_preconfirmation_prevalence_from_infections(infections, incu_par1, incu_par2, alphas, scales));
+    return rcpp_result_gen;
+END_RCPP
+}
 // daily_sigmoid_interval_cpp
 NumericVector daily_sigmoid_interval_cpp(double growth, double i_max, int tmax, double t0);
 RcppExport SEXP _covback_daily_sigmoid_interval_cpp(SEXP growthSEXP, SEXP i_maxSEXP, SEXP tmaxSEXP, SEXP t0SEXP) {
@@ -468,6 +483,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_covback_calculate_preconfirmation_prevalence_vector", (DL_FUNC) &_covback_calculate_preconfirmation_prevalence_vector, 3},
     {"_covback_calculate_preconfirmation_prevalence", (DL_FUNC) &_covback_calculate_preconfirmation_prevalence, 2},
     {"_covback_calculate_unrecovered_prevalence", (DL_FUNC) &_covback_calculate_unrecovered_prevalence, 2},
+    {"_covback_calculate_preconfirmation_prevalence_from_infections", (DL_FUNC) &_covback_calculate_preconfirmation_prevalence_from_infections, 5},
     {"_covback_daily_sigmoid_interval_cpp", (DL_FUNC) &_covback_daily_sigmoid_interval_cpp, 4},
     {"_covback_daily_exp_interval_cpp", (DL_FUNC) &_covback_daily_exp_interval_cpp, 3},
     {"_covback_calculate_infection_incidence_time", (DL_FUNC) &_covback_calculate_infection_incidence_time, 7},

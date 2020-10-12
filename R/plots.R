@@ -38,11 +38,7 @@ generate_prediction_intervals <- function(chain, parTab, data, time_varying_conf
                                           add_noise=TRUE, noise_ver="poisson",incubation_ver="weibull",
                                           return_draws=FALSE,
                                           model_ver=1,
-                                          single_province=FALSE,
-                                          scale_reporting=FALSE,
-                                          report_rate_switch=83,
-                                          report_rate_1=0.14,
-                                          report_rate_2=0.65){
+                                          single_province=FALSE){
   if(single_province){
     model_func <- create_model_func(parTab, data, ver="model",model_ver=model_ver,
                                     noise_ver=noise_ver,incubation_ver=incubation_ver)
@@ -51,10 +47,7 @@ generate_prediction_intervals <- function(chain, parTab, data, time_varying_conf
     model_func <- create_model_func_provinces_fixed(parTab, data, time_varying_confirm_delay_pars=time_varying_confirm_delay_pars,
                                               daily_import_probs = daily_import_probs, daily_export_probs = daily_export_probs,
                                               ver="model",model_ver=model_ver,incubation_ver=incubation_ver,
-                                              calculate_prevalence=TRUE, scale_reporting = scale_reporting,
-                                              report_rate_switch = report_rate_switch,
-                                              report_rate_1 = report_rate_1,
-                                              report_rate_2 = report_rate_2)
+                                              calculate_prevalence=TRUE)
   }
     par_names <- parTab$names
 

@@ -1,0 +1,512 @@
+getLognormMode(1.57,0.65)
+plot(dlnorm(0:30,1.57, 0.65))
+mean(rlnorm(1000,1.57,0.65))
+sd(rlnorm(1000,1.57,0.65))
+x <- (rlnorm(1000,1.57,0.65))
+dens(density(x))
+dens <- density(x)
+dens$x[which.max(dens$y)]
+exp(1.57 - 0.67^2)
+exp(1.57 - 0.65^2)
+library(lazymcmc)
+run_MCMC
+devtools::install_github("jameshay218/lazymcmc",ref="parallel_tempering")
+devtools::install_github("jameshay218/lazymcmc",ref="parallel_tempering")
+devtools::install_github("jameshay218/lazymcmc",ref="parallel_tempering",force=TRUE)
+library(lazymcmc)
+run_MCMC
+#devtools::install_github("jameshay218/lazymcmc",ref="parallel_tempering")
+#library(lazymcmc)
+devtool::load_all("~/Documents/GitHub/lazymcmc/")
+#devtools::install_github("jameshay218/lazymcmc",ref="parallel_tempering")
+#library(lazymcmc)
+devtools::load_all("~/Documents/GitHub/lazymcmc/")
+run_MCMC
+hist(rgamma(1000, 5, rate=5/0.01))
+hist(rgamma(1000, 5, rate=5/0.001))
+hist(rnorm(1000, 4.5, 1))
+hist(rnorm(10000, 2.5,1))
+hist(rnorm(10000, 2.5,0.5))
+hist(rnorm(10000, 1/4.5,1))
+hist(1/rnorm(10000, 1/4.5,1))
+rnorm(10000, 1/4.5,1)
+1/rnorm(10000, 1/4.5,1)
+hist(1/rnorm(10000, 1/4.5,1))
+hist(1/rnorm(10000, 1/4.5,1),xlim=c(0,100))
+hist(rgamma(1000,shape=5,rate=5/0.001))
+hist(rgamma(1000,shape=5,rate=50/0.001))
+gamma_pars_from_mean_sd(0.01,0.1)
+gamma_pars_from_mean_sd <- function(gamma_mean, gamma_var){
+scale <- gamma_var/gamma_mean
+shape <- gamma_mean/scale
+return(list("shape"=shape,"scale"=scale))
+}
+gamma_pars_from_mean_sd(0.01,0.1)
+hist(rgamma(1000,shape=0.001, scale=10))
+gamma_pars_from_mean_sd(0.01,0.01)
+hist(rgamma(1000,shape=0.001, scale=10))
+hist(rgamma(1000,shape=0.01, scale=1))
+gamma_pars_from_mean_sd(0.01,0.001)
+hist(rgamma(1000,shape=0.01, scale=1))
+gamma_pars_from_mean_sd(0.1,0.001)
+hist(rgamma(1000,shape=0.01, scale=1))
+gamma_pars_from_mean_sd(1,0.001)
+hist(rgamma(1000,shape=0.01, scale=1))
+gamma_pars_from_mean_sd(0.01,0.0001)
+hist(rgamma(1000,shape=0.01, scale=1))
+g_pars <- gamma_pars_from_mean_sd(0.01,0.0001)
+hist(rgamma(1000,shape=g_pars[[1]], scale=g_pars[[2]]))
+g_pars <- gamma_pars_from_mean_sd(0.01,0.001)
+hist(rgamma(1000,shape=g_pars[[1]], scale=g_pars[[2]]))
+hist(rgamma(1000,shape=g_pars[[1]], scale=g_pars[[2]]),breaks=100)
+hist(rnorm(10000, 2.5,0.5))
+hist(rnorm(10000, 1/4.5,1))
+gamma_pars_from_mean_sd <- function(gamma_mean, gamma_var){
+scale <- gamma_var/gamma_mean
+shape <- gamma_mean/scale
+return(list("shape"=shape,"scale"=scale))
+}
+g_pars <- gamma_pars_from_mean_sd(0.01,0.001)
+hist(rgamma(1000,shape=g_pars[[1]], scale=g_pars[[2]]),breaks=100)
+chain <- read.csv("SIR_fitting_multivariate_chain.csv")
+plot(coda::as.mcmc(chain))
+hist(1/chain$sigma)
+plot(coda::as.mcmc(chain))
+chain <- read.csv("SIR_fitting_multivariate_chain.csv")
+plot(coda::as.mcmc(chain[chain$sampno > 10000,]))
+plot(chain$R0 ~ chain$sigma)
+plot(chain$rho ~ chain$sigma)
+chain <- read.csv("SIR_fitting_multivariate_chain.csv")
+chain <- chain[chain$sampno > 10000,]
+plot(chain$rho ~ chain$sigma)
+chain <- read.csv("SIR_fitting_univariate_chain.csv")
+plot(coda::as.mcmc(chain))
+chain <- read.csv("SIR_fitting_univariate_chain.csv")
+plot(coda::as.mcmc(chain))
+chain <- read.csv("SIR_fitting_univariate_chain.csv")
+plot(coda::as.mcmc(chain))
+plot(chain$R0~chain$sigma
+)
+plot(chain$R0~chain$rho)
+plot(chain$sigma~chain$rho)
+1/0.15
+chain <- read.csv("SIR_fitting_base_univariate_chain.csv")
+plot(coda::as.mcmc(chain))
+chain <- read.csv("SIR_fitting_base_univariate_chain.csv")
+plot(coda::as.mcmc(chain[chain$sampno > 10000,]))
+chain <- read.csv("SIR_fitting_multivariate_chain.csv")
+plot(coda::as.mcmc(chain[chain$sampno > 1000,]))
+plot(coda::as.mcmc(chain[chain$sampno > 1000,]))
+chain <- read.csv("SIR_fitting_multivariate_chain.csv")
+plot(coda::as.mcmc(chain[chain$sampno > 1000,]))
+chain <- read.csv("SIR_fitting_multivariate_chain.csv")
+plot(coda::as.mcmc(chain[chain$sampno > 1000,]))
+chain <- read.csv("SIR_fitting_multivariate_chain.csv")
+plot(coda::as.mcmc(chain[chain$sampno > 1000,]))
+chain <- read.csv("SIR_fitting_base_multivariate_chain.csv")
+plot(coda::as.mcmc(chain[chain$sampno > 1000,]))
+1/0.3
+plot(coda::as.mcmc(chain[chain$sampno > 1000,]))
+plot(coda::as.mcmc(chain[chain$sampno > 1000,]))
+chain <- read.csv("SIR_fitting_multivariate_chain.csv")
+plot(coda::as.mcmc(chain[chain$sampno > 1000,]))
+chain <- read.csv("SIR_fitting_multivariate_chain.csv")
+plot(coda::as.mcmc(chain[chain$sampno > 1000,]))
+hist(rnorm(1000,0.05,1))
+chain <- read.csv("SIR_fitting_multivariate_chain.csv")
+plot(coda::as.mcmc(chain[chain$sampno > 1000,]))
+install.packages("~/Documents/GitHub/covback/",repos=NULL,type="source")
+library(grid)
+library(lazymcmc)
+library(tidyverse)
+library(ggpubr)
+library(patchwork)
+library(doParallel)
+#library(covback)
+setwd("~/Documents/GitHub/covback/")
+#devtools::document()
+#devtools::load_all()
+#install.packages("~/Documents/GitHub/covback/",repos=NULL,type="source")
+library(covback)
+mcmcPars1 <- c("iterations"=100000,"popt"=0.44,"opt_freq"=1000,
+"thin"=100,"adaptive_period"=200000,"save_block"=100)
+mcmcPars2 <- c("iterations"=200000,"popt"=0.234,"opt_freq"=1000,
+"thin"=100,"adaptive_period"=400000,"save_block"=100)
+scenario_key <- read_csv("~/Documents/GitHub/covback/scripts/scenarios/scenario_key.csv")
+scenario_key <- scenario_key[!(scenario_key$runname %in% c("free_t0","free_tswitch")),]
+## Set up parallelisation
+n_clusters <- 15
+cl <- makeCluster(n_clusters)
+registerDoParallel(cl)
+nrow(scenario_key)
+source('~/Documents/GitHub/covback/scripts/scenarios/main_result.R', echo=TRUE)
+library(grid)
+library(lazymcmc)
+library(tidyverse)
+library(ggpubr)
+library(patchwork)
+library(doParallel)
+#library(covback)
+setwd("~/Documents/GitHub/covback/")
+#devtools::document()
+#devtools::load_all()
+#install.packages("~/Documents/GitHub/covback/",repos=NULL,type="source")
+library(covback)
+mcmcPars1 <- c("iterations"=100000,"popt"=0.44,"opt_freq"=1000,
+"thin"=100,"adaptive_period"=200000,"save_block"=100)
+mcmcPars2 <- c("iterations"=200000,"popt"=0.234,"opt_freq"=1000,
+"thin"=100,"adaptive_period"=400000,"save_block"=100)
+scenario_key <- read_csv("~/Documents/GitHub/covback/scripts/scenarios/scenario_key.csv")
+scenario_key <- scenario_key[!(scenario_key$runname %in% c("free_t0","free_tswitch")),]
+## Set up parallelisation
+n_clusters <- 12
+cl <- makeCluster(n_clusters)
+registerDoParallel(cl)
+tmin <- as.POSIXct("2019-11-01",format="%Y-%m-%d", tz="UTC")
+tmax <- as.POSIXct("2020-03-03",format="%Y-%m-%d",tz="UTC")
+times <- seq(tmin, tmax, by="1 day")
+## Real export probs
+export_probs <- read_csv("data/export_probs_matched.csv")$export_prob
+export_probs_lower <- read_csv("data/export_probs_lower.csv")$export_prob
+## Real import probs
+import_probs <- read_csv("data/import_probs_matched.csv")
+import_probs <- as.matrix(import_probs[,2:ncol(import_probs)])
+colnames(import_probs) <- NULL
+parTab <- read_csv("pars/partab_logistic_growth.csv")
+parTab[parTab$names == "K","values"] <- log(parTab[parTab$names == "K","values"])
+parTab[parTab$names == "K","upper_bound"] <- log(parTab[parTab$names == "K","upper_bound"])
+parTab[parTab$names == "K","lower_bound"] <- log(parTab[parTab$names == "K","lower_bound"])
+parTab[parTab$names == "K","lower_start"] <- log(parTab[parTab$names == "K","lower_start"])
+parTab[parTab$names == "K","upper_start"] <- log(parTab[parTab$names == "K","upper_start"])
+time_varying_report_pars <- data.frame(date=as.Date(times,origin="2019-11-01"),shape=3.18,scale=1/0.59)
+time_varying_report_pars[time_varying_report_pars$date <= as.Date("2020-01-27",origin="2019-11-01"),"shape"] <- 3.72
+time_varying_report_pars[time_varying_report_pars$date <= as.Date("2020-01-27",origin="2019-11-01"),"scale"] <- 1/0.42
+confirmed_data1 <- as.data.frame(read_csv("data/real/midas_data_final.csv"))
+confirmed_data1 <- confirmed_data1 %>% select(-province_raw)
+confirmed_data1 <- confirmed_data1 %>% mutate(n=ifelse(province==1, NA, n))
+#parTab <- parTab[parTab$province %in% c("all",1:10),]
+#confirmed_data1 <- confirmed_data1[confirmed_data1$province %in% 1:10,]
+#import_probs <- import_probs[1:10,]
+## Set up priors
+subset_parTab <- parTab[parTab$names == "local_r",]
+r_index <- which(subset_parTab$province != "1")
+par_names <- parTab$names
+## Create priors on delay distribution parameters
+# prior_table <- read.csv("pars/prior_quantiles.csv",stringsAsFactors = FALSE)
+# prior_sds <- find_all_prior_sds(prior_table)
+#
+# prior_func_delays <- function(pars){
+#   serial_pars <- gamma_pars_from_mean_sd(pars["serial_interval_mean"],pars["serial_interval_sd"]^2)
+#   serial_interval_1 <- dnorm(serial_pars[[1]], prior_table$mean[1], prior_sds[1], 1)
+#   serial_interval_2 <- dnorm(1/serial_pars[[2]], prior_table$mean[2], prior_sds[2], 1)
+#
+#   incubation_period_1 <- dnorm(pars["lnorm_incu_par1"], prior_table$mean[3], prior_sds[3], 1)
+#   incubation_period_2 <- dnorm(pars["lnorm_incu_par2"], prior_table$mean[4], prior_sds[4], 1)
+#
+#   return(serial_interval_1 + serial_interval_2 + incubation_period_1 + incubation_period_2)
+# }
+# pars <- parTab$values
+# names(pars) <- parTab$names
+# prior_func_delays(pars)
+i <- 1
+for(i in 1:nrow(scenario_key)){
+setwd("../covback_chains_final/main_results_final_maybe")
+filename_tmp <- paste0(scenario_key$runname[i], "_",scenario_key$chain_no[i])
+parTab[parTab$names == "t0","values"] <- scenario_key$t0_val[i]
+parTab[parTab$names == "t0","fixed"] <- scenario_key$t0_fixed[i]
+parTab[parTab$names == "local_r_sd","values"] <- scenario_key$r_local_sd[i]
+parTab[parTab$names == "t_switch","fixed"] <- scenario_key$t_switch_fixed[i]
+parTab[parTab$names == "t_switch","values"] <- scenario_key$t_switch_val[i]
+print(scenario_key$t_switch_val[i])
+}
+for(i in 1:nrow(scenario_key)){
+#setwd("../covback_chains_final/main_results_final_maybe")
+filename_tmp <- paste0(scenario_key$runname[i], "_",scenario_key$chain_no[i])
+parTab[parTab$names == "t0","values"] <- scenario_key$t0_val[i]
+parTab[parTab$names == "t0","fixed"] <- scenario_key$t0_fixed[i]
+parTab[parTab$names == "local_r_sd","values"] <- scenario_key$r_local_sd[i]
+parTab[parTab$names == "t_switch","fixed"] <- scenario_key$t_switch_fixed[i]
+parTab[parTab$names == "t_switch","values"] <- scenario_key$t_switch_val[i]
+print(scenario_key$t_switch_val[i])
+}
+source('~/Documents/GitHub/covback/scripts/scenarios/main_result.R', echo=TRUE)
+source('~/Documents/GitHub/covback/scripts/scenarios/main_result.R', echo=TRUE)
+res
+exp(12.1)
+exp(12.5)
+exp(12.15)
+exp(11.9)
+library(grid)
+library(lazymcmc)
+library(tidyverse)
+library(ggpubr)
+library(patchwork)
+#library(covback)
+library(data.table)
+library(coda)
+setwd("~/Documents/GitHub/covback/")
+devtools::load_all()
+savewd <- "~/Google Drive/nCoV/backcalculation_paper/figures/"
+filename <- "main"
+adaptive_period <- 300000
+chain_wd <- "~/Documents/GitHub/covback_chains_final/main_results_final_maybe/wow/"
+parTab <- read_csv("pars/partab_logistic_growth.csv")
+parTab[parTab$names == "t0","fixed"] <- 0
+chains <- load_mcmc_chains(chain_wd,parTab,unfixed=TRUE,thin=1,burnin=adaptive_period,multi=TRUE)
+chains <- as.list(chains[[1]])
+for(i in 1:length(chains)){
+chains[[i]] <- as.data.frame(chains[[i]])
+chains[[i]]$sampno <- 1:nrow(chains[[i]])
+chains[[i]]$chain <- i
+}
+chains <- do.call("rbind", chains)
+melted_chains <- reshape2::melt(chains,id.vars=c("sampno","chain"))
+import_probs <- read.csv("data/import_probs_matched.csv")
+provinces <- as.character(import_probs[,1])
+provinces[which(provinces == "Inner Mongolia")] <- "Inner_Mongolia"
+labels <- paste0("R[",provinces[2:length(provinces)],"]^{local}")
+names(labels) <- c("local_r",paste0("local_r.",1:(length(provinces)-2)))
+labels <- c(labels, c("K"="K","size"="phi", "confirm_delay_shape"="k^s",
+"confirm_delay_scale"="theta^s"))
+melted_chains$variable <- as.character(melted_chains$variable)
+melted_chains <- melted_chains %>% mutate(group=ifelse(variable %like% "local_r","R","other"))
+melted_chains$variable <- labels[melted_chains$variable]
+melted_chains$variable <- factor(melted_chains$variable, levels=labels)
+melted_chains <- melted_chains %>% drop_na()
+min_samp <- min(melted_chains$sampno)
+max_samp <- max(melted_chains$sampno)
+p_r <- melted_chains %>% filter(group == "R") %>%
+ggplot() + geom_line(aes(x=sampno, y=value,col=as.factor(chain))) +
+facet_wrap(~variable,labeller=label_parsed, ncol=5) +
+xlab("Sample") +
+ylab("")+
+scale_x_continuous(limits=c(min_samp, max_samp),breaks=seq(min_samp, max_samp, by=500)) +
+theme_pubr() +
+theme(legend.position="none",
+axis.text.x=element_text(size=6),
+axis.text.y=element_text(size=6)) + labs(tag = "B")
+p_other <- melted_chains %>% filter(group == "other") %>%
+ggplot() + geom_line(aes(x=sampno, y=value,col=as.factor(chain))) +
+facet_wrap(~variable,labeller=label_parsed, nrow=1,scales="free_y") +
+xlab("") +
+ylab("") +
+scale_x_continuous(limits=c(min_samp, max_samp),
+breaks=seq(min_samp, max_samp, by=500)) +
+theme_pubr() +
+theme(legend.position="none",
+axis.text.x=element_text(size=6),
+axis.text.y=element_text(size=6)) + labs(tag = "A")
+p_all <- (p_other + p_r) + plot_layout(ncol=1,heights=c(0.2,1))
+p_all
+chains2 <- as.data.frame(load_mcmc_chains(chain_wd,parTab,unfixed=FALSE,thin=1,burnin=adaptive_period,multi=TRUE)[[2]])
+chains2$sampno <- 1:nrow(chains2)
+## Real import probs
+import_probs <- read_csv("data/import_probs_matched.csv")
+import_probs <- as.matrix(import_probs[,2:ncol(import_probs)])
+export_probs <- read_csv("data/export_probs_matched.csv")$export_prob
+confirmed_data1 <- as.data.frame(read_csv("data/real/midas_data_final.csv"))
+confirmed_data1 <- confirmed_data1 %>% mutate(n=ifelse(province==1, NA, n))
+confirmed_data1 <- confirmed_data1 %>% select(-province_raw)
+tmin <- as.POSIXct("2019-11-01",format="%Y-%m-%d", tz="UTC")
+tmax <- as.POSIXct("2020-03-03",format="%Y-%m-%d",tz="UTC")
+times <- seq(tmin, tmax, by="1 day")
+time_varying_report_pars <- data.frame(date=as.Date(times,origin="2019-11-01"),shape=3.18,scale=1/0.59)
+time_varying_report_pars[time_varying_report_pars$date <= as.Date("2020-01-27",origin="2019-11-01"),"shape"] <- 3.72
+time_varying_report_pars[time_varying_report_pars$date <= as.Date("2020-01-27",origin="2019-11-01"),"scale"] <- 1/0.42
+quants_summary <- generate_prediction_intervals(chains2, parTab, confirmed_data1,
+daily_import_probs = import_probs, daily_export_probs = export_probs,
+time_varying_confirm_delay_pars = time_varying_report_pars,
+nsamp=100,return_draws = FALSE,model_ver="logistic",noise_ver="poisson",
+incubation_ver="lnorm")
+quants_summary$date <- as.Date(quants_summary$date, origin="2019-11-01")
+quants_summary$province <- provinces[quants_summary$province]
+factor_levels <- confirmed_data1 %>% filter(province != 1) %>%
+group_by(province) %>%
+summarise(x=sum(n,na.rm=TRUE)) %>%
+arrange(-x) %>% pull(province)
+factor_levels_names <- provinces[factor_levels]
+quants_summary_hubei <- quants_summary %>% filter(province == "Hubei")
+quants_summary_other <- quants_summary %>% filter(province != "Hubei")
+quants_summary_other$province <- factor(quants_summary_other$province, levels=factor_levels_names)
+var_key <- c("presymptomatic_prevalence"="Prevalence of pre-symptomatic infections",
+"symptomatic_prevalence"="Prevalence of symptomatic, \nnot yet recovered infections",
+"disease_prevalence"="Prevalence of all infected individuals"
+)
+tmp <- quants_summary_other[quants_summary_other$var %in% names(var_key),]
+tmp$var <- var_key[tmp$var]
+prev_all_p <- ggplot(tmp[tmp$date >= "2020-01-01",]) +
+geom_ribbon(aes(x=date,ymin=lower,ymax=upper,fill=var),alpha=0.25) +
+geom_line(aes(x=date,y=median,col=var)) +
+#geom_point(data=confirmed_data2[confirmed_data1$date >= "2020-01-01",],aes(x=date,y=n),size=0.5) +
+scale_x_date(breaks="7 days") +
+scale_fill_manual(values=c("#E69F00","#0072B2","#009E73"))+
+scale_color_manual(values=c("#E69F00","#0072B2","#009E73"))+
+geom_vline(xintercept=as.Date("2020-01-23",origin="2019-11-01"),linetype="dashed") +
+theme_pubr() +
+ylab("Daily prevalence (absolute numbers)") +
+xlab("Date") +
+theme(axis.text.x=element_text(angle=45,hjust=1,size=7),
+axis.text.y=element_text(size=7),
+strip.text=element_text(size=8),
+axis.title = element_text(size=8),
+legend.text = element_text(size=7),
+legend.title = element_blank(),
+legend.position=c(0.6,0),
+legend.direction = "horizontal",
+panel.grid.minor=element_blank()) +
+facet_wrap(~province,ncol=4,scales="free_y")
+pop_wuhan <- 11080000
+tmp_hubei <- quants_summary_hubei %>% filter(date >= "2019-12-08" & var %in% names(var_key))
+tmp_hubei$var <- var_key[tmp_hubei$var]
+hubei_plot <- tmp_hubei %>%
+ggplot() +
+geom_rect(xmin=as.Date("2020-01-23"),xmax=as.Date("2021-01-23"),ymin=0,ymax=1,fill="grey80",alpha=0.5)+
+geom_vline(xintercept=(as.Date("2020-01-23", format="%Y-%m-%d", tz="LMT", origin="2019-11-01")),
+linetype="dashed") +
+geom_line(aes(x=date,y=median/pop_wuhan,col=var)) +
+geom_ribbon(aes(x=date,ymin=lower/pop_wuhan,ymax=upper/pop_wuhan,fill=var),alpha=0.25) +
+scale_fill_manual(values=c("#E69F00","#0072B2","#009E73"))+
+scale_color_manual(values=c("#E69F00","#0072B2","#009E73"))+
+scale_x_date(breaks="7 days") +
+scale_y_continuous(expand=c(0,0),limits=c(0,0.02),breaks=seq(0,0.02,by=0.0025)) +
+theme_bw() +
+ylab("Daily prevalence (absolute numbers)") +
+xlab("Date") +
+theme(axis.text.x=element_text(angle=45,hjust=1,size=7),
+axis.text.y=element_text(size=7),
+axis.title = element_text(size=8),
+legend.text = element_text(size=8),
+legend.title = element_blank(),
+legend.position="bottom",
+panel.grid.minor=element_blank())
+hubei_plot
+pop_wuhan <- 11080000
+tmp_hubei <- quants_summary_hubei %>% filter(date >= "2019-12-08" & var %in% names(var_key))
+tmp_hubei$var <- var_key[tmp_hubei$var]
+hubei_plot <- tmp_hubei %>%
+ggplot() +
+geom_rect(xmin=as.Date("2020-01-23"),xmax=as.Date("2021-01-23"),ymin=0,ymax=1,fill="grey80",alpha=0.5)+
+geom_vline(xintercept=(as.Date("2020-01-23", format="%Y-%m-%d", tz="LMT", origin="2019-11-01")),
+linetype="dashed") +
+geom_line(aes(x=date,y=median/pop_wuhan,col=var)) +
+geom_ribbon(aes(x=date,ymin=lower/pop_wuhan,ymax=upper/pop_wuhan,fill=var),alpha=0.25) +
+scale_fill_manual(values=c("#E69F00","#0072B2","#009E73"))+
+scale_color_manual(values=c("#E69F00","#0072B2","#009E73"))+
+scale_x_date(breaks="7 days") +
+scale_y_continuous(expand=c(0,0),limits=c(0,0.02),breaks=seq(0,0.02,by=0.0025)) +
+theme_bw() +
+ylab("Daily prevalence (absolute numbers)") +
+xlab("Date") +
+theme(axis.text.x=element_text(angle=45,hjust=1,size=7),
+axis.text.y=element_text(size=7),
+axis.title = element_text(size=8),
+legend.text = element_text(size=8),
+legend.title = element_blank(),
+legend.position="bottom",
+panel.grid.minor=element_blank())
+hubei_plot
+## Incidence
+quants1 <- quants_summary
+confirmed_data2 <- confirmed_data1
+confirmed_data2$date <- as.Date(confirmed_data2$date, origin="2019-11-01")
+confirmed_data2$province <- as.numeric(confirmed_data2$province)
+confirmed_data2$province <- provinces[confirmed_data2$province]
+confirmed_data2$province <- factor(confirmed_data2$province,levels=factor_levels_names)
+confirmed_data2 <- confirmed_data2 %>% drop_na()
+quants1$province <- factor(quants1$province,levels=factor_levels_names)
+quants1 <- quants1 %>% drop_na()
+var_key2 <- c("observations"="Simulated incidence of case confirmations",
+"onsets"="Symptom onset incidence",
+"infections"="Infection incidence")
+quants1 <- quants1 %>% filter(var %in% names(var_key2))
+quants1$var <- var_key2[quants1$var]
+quants1$var <- factor(quants1$var, levels=var_key2)
+p <- ggplot(quants1[quants1$date >= "2020-01-01",]) +
+geom_ribbon(aes(x=date,ymin=lower,ymax=upper,fill=var),alpha=0.25) +
+geom_line(aes(x=date,y=median,col=var)) +
+geom_point(data=confirmed_data2[confirmed_data2$date >= "2020-01-01",],aes(x=date,y=n),size=0.5) +
+scale_x_date(breaks="7 days") +
+scale_fill_manual(values=c("#E69F00","#0072B2","#009E73"))+
+scale_color_manual(values=c("#E69F00","#0072B2","#009E73"))+
+geom_vline(xintercept=as.Date("2020-01-23",origin="2019-11-01"),linetype="dashed") +
+theme_pubr() +
+xlab("Date") +
+ylab("Daily incidence (absolute numbers)") +
+theme(axis.text.x=element_text(angle=45,hjust=1,size=7),
+axis.text.y=element_text(size=7),
+axis.title = element_text(size=8),
+legend.text = element_text(size=7),
+strip.text = element_text(size=8),
+legend.title = element_blank(),
+legend.direction = "horizontal",
+legend.position=c(0.6,0),
+panel.grid.minor=element_blank()) +
+facet_wrap(~province,ncol=4,scales="free_y")
+quants1 %>% ungroup() %>% filter(var == "Symptom onset incidence") %>% group_by(province) %>% filter(median == max(median))
+p
+quants <- generate_prediction_intervals(chains2, parTab, confirmed_data1,
+daily_import_probs = import_probs, daily_export_probs = export_probs,
+nsamp=100,return_draws = TRUE,model_ver="logistic",noise_ver="poisson",
+incubation_ver="lnorm")
+quants <- quants$draws
+quants$province <- provinces[quants$province]
+quants$date <- as.Date(quants$date, origin="2019-11-01")
+## 444 cases confirmed by 23rd Jan as per JHU data
+number_conf <- quants %>% filter(province == "Hubei" & date <= "2020-01-23" & var == "observations") %>%
+group_by(sampno) %>%
+summarise(x=sum(n)) %>% pull(x)
+mean(444/number_conf)
+quantile(444/number_conf, c(0.025,0.5,0.975))
+## Or 30th, 4903
+number_conf2 <- quants %>% filter(province == "Hubei" & date <= "2020-01-30" & var == "observations") %>%
+group_by(sampno) %>%
+summarise(x=sum(n)) %>% pull(x)
+mean(4903/number_conf2)
+quantile(4903/number_conf2, c(0.025,0.5,0.975))
+n_wuhan <- 11080000
+quants_summary %>% filter(province == "Hubei" &
+var %in% c("presymptomatic_prevalence","symptomatic_prevalence","disease_prevalence") &
+date %in% c(as.Date("2020-01-23"),as.Date("2020-01-30"))) %>%
+select(date, var, lower, median, upper) %>% ungroup() %>%
+mutate(lower=lower/n_wuhan, median=median/n_wuhan,upper=upper/n_wuhan)
+## Final cumulative incidence
+quantile(chains$K/n_wuhan,c(0.025,0.5,0.975))
+conf_p <- plot_confirm_delay(chains2,nsamp=100,xmax=40) + ylab("Probability density") + xlab("Delay from symptom onset to confirmation")
+conf_p
+import_probs <- read.csv("data/import_probs_matched.csv")
+provinces <- as.character(import_probs[,1])
+provinces[which(provinces == "Inner Mongolia")] <- "Inner_Mongolia"
+tmp <- chains2[,colnames(chains2) %like% "local_r"]
+tmp <- tmp[,!(colnames(tmp) %in% c("local_r_mean","local_r_sd"))]
+tmp <- tmp[,2:ncol(tmp)]
+tmp <- tmp/rowMeans(tmp)
+colnames(tmp) <- unique(confirmed_data2$province)
+tmp1 <- reshape2::melt(tmp)
+import_probs_melt <- reshape2::melt(import_probs)
+import_probs_melt$province_use <- as.character(import_probs_melt$province_use)
+import_probs_melt <- import_probs_melt %>% mutate(province_use = ifelse(province_use=="Inner Mongolia", "Inner_Mongolia",province_use))
+import_probs_melt <- import_probs_melt %>% group_by(province_use) %>% summarise(val=mean(value)) %>% filter(province_use != "Hubei") %>% ungroup()
+colnames(import_probs_melt) <- c("variable", "Mean import probability")
+import_probs_melt$variable <- factor(import_probs_melt$variable,levels=levels(tmp1$variable))
+tmp1 <- tmp1 %>% left_join(import_probs_melt)
+tmp1$variable <- factor(tmp1$variable, levels=levels(confirmed_data2$province))
+local_r_plot <- ggplot(tmp1) +
+geom_violin(aes(x=variable, y=value, fill=`Mean import probability`),
+draw_quantiles=c(0.025,0.5,0.975),scale="width") +
+scale_fill_gradient2(low="blue",mid="red",high="orange",midpoint=0.075) +
+geom_hline(yintercept=1,linetype="dashed") +
+guides(fill=guide_colourbar(title.position="top",
+direction="horizontal")) +
+theme_bw() +
+theme(axis.text.x=element_text(angle=45,hjust=1),
+legend.text = element_text(angle=45,hjust=1,size=7),
+legend.title=element_text(size=7,hjust=0.5),
+legend.position=c(0.8,0.83)) +
+xlab("Province") +
+labs(y=expression("Average number of local cases\n per import, R" [local]))+
+scale_y_continuous(expand=c(0,0),breaks=seq(0,10,by=1),limits=c(0,10))
+local_r_plot
+head(tmp1)
+nrow(tmp1)
+write_csv(tmp1, "local_r_relative.csv")
+getwd()

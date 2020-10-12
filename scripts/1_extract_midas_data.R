@@ -50,10 +50,10 @@ all_dat <- all_dat %>% select(date, province, n)
 colnames(all_dat)[2] <- "province_raw"
 
 ## Remove Shandong after 19th Feb as big spike
-all_dat <- all_dat %>% mutate(n = ifelse(province_raw == "Shandong" & date > "2020-02-19",NA, n))
+#all_dat <- all_dat %>% mutate(n = ifelse(province_raw == "Shandong" & date > "2020-02-19",NA, n))
 
 ## Cutoff of 3rd march, as want before second increase
-all_dat <- all_dat %>% filter(date <= "2020-03-03")
+#all_dat <- all_dat %>% filter(date <= "2020-03-03")
 
 ## Get data from 1st November 2019 to now, filling with zeros
 ## Also the 15th is missing, so add zeros for that day. Pretty much fine as way before majority of cases
@@ -68,13 +68,15 @@ all_dat_final <- bind_rows(all_dat, all_dat_fill)
 all_dat_final$province <- as.numeric(all_dat_final$province_raw)
 all_dat_final <- all_dat_final  %>% arrange(province, date)
 all_dat_final %>% ggplot() + geom_line(aes(x=date, y=n)) + facet_wrap(~province_raw, scales="free_y")
+all_dat_final$date_full <- all_dat_final$date
 
-times <- seq(as.Date("2019-11-01"),as.Date("2020-03-03"), by="1 day")
+times <- seq(as.Date("2019-11-01"),max(all_dat_final$date), by="1 day")
 
 all_dat_final$date <- match(all_dat_final$date, times) - 1
 
 ## Save
 write_csv(all_dat_final, "~/Documents/GitHub/covback/data/real/midas_data_final.csv")
+write_csv(all_dat_final, "~/Documents/GitHub/africa_export/data/midas_data_final.csv")
 
 
 
